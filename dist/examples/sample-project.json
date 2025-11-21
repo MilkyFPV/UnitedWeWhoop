@@ -1,0 +1,91 @@
+{
+  "version": "3.0",
+  "type": "mapquest-project-multi-overlay",
+  "timestamp": "2024-10-27T10:30:00.000Z",
+  "mapCenter": {
+    "lat": 51.505,
+    "lng": -0.09
+  },
+  "mapZoom": 13,
+  "overlays": [],
+  "activeOverlayId": null,
+  "nextOverlayId": 1,
+  "shapes": [
+    {
+      "id": 1,
+      "name": "London Sample Route",
+      "points": [
+        {
+          "lat": 51.501844,
+          "lng": -0.140591,
+          "name": "Westminster",
+          "description": "Starting point near Westminster"
+        },
+        {
+          "lat": 51.507790,
+          "lng": -0.127911,
+          "name": "Embankment",
+          "description": "Thames Embankment area"
+        },
+        {
+          "lat": 51.511396,
+          "lng": -0.124350,
+          "name": "Covent Garden",
+          "description": "Covent Garden district"
+        },
+        {
+          "lat": 51.515411,
+          "lng": -0.124831,
+          "name": "Oxford Street",
+          "description": "Oxford Street shopping area"
+        }
+      ],
+      "isClosed": true,
+      "area": 485632.75,
+      "color": "#e74c3c",
+      "score": 15,
+      "notes": "Sample route for demonstration",
+      "created": "2024-10-27T10:30:00.000Z",
+      "visible": true
+    },
+    {
+      "id": 2,
+      "name": "Park Route",
+      "points": [
+        {
+          "lat": 51.508,
+          "lng": -0.135,
+          "name": "Park Corner 1",
+          "description": "Northwest corner"
+        },
+        {
+          "lat": 51.510,
+          "lng": -0.135,
+          "name": "Park Corner 2", 
+          "description": "Northeast corner"
+        },
+        {
+          "lat": 51.510,
+          "lng": -0.130,
+          "name": "Park Corner 3",
+          "description": "Southeast corner"
+        },
+        {
+          "lat": 51.508,
+          "lng": -0.130,
+          "name": "Park Corner 4",
+          "description": "Southwest corner"
+        }
+      ],
+      "isClosed": false,
+      "area": 0,
+      "color": "#3498db",
+      "score": 8,
+      "notes": "Simple rectangular path",
+      "created": "2024-10-27T10:35:00.000Z",
+      "visible": true
+    }
+  ],
+  "currentShapeId": null,
+  "nextShapeId": 3
+}
