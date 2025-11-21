@@ -1,0 +1,52 @@
+# Sample Coordinates for MapQuest Pro
+
+## London Area Route Example
+This sample creates a route around central London landmarks:
+
+```
+51.501844,-0.140591/51.507790,-0.127911/51.511396,-0.124350/51.515411,-0.124831/51.518603,-0.130259/51.517915,-0.134668/51.515458,-0.141813/51.516653,-0.144913/51.517668,-0.149365/51.516927,-0.153066/51.515271,-0.156445/51.513381,-0.158022/51.507132,-0.151771
+```
+
+## New York City Example
+Route through Manhattan landmarks:
+
+```
+40.748817,-73.985428/40.761433,-73.979681/40.775003,-73.968370/40.783060,-73.971249/40.789722,-73.976563/40.794851,-73.971767/40.796843,-73.949318/40.783115,-73.964844/40.767444,-73.981934
+```
+
+## Small Test Area (Park Route)
+Simple rectangular route for testing:
+
+```
+40.783060,-73.971249/40.783060,-73.965000/40.786000,-73.965000/40.786000,-73.971249
+```
+
+## How to Use These Coordinates
+
+1. Open MapQuest Pro
+2. Click "📥 Import Coords" 
+3. Switch to "Bulk Import" tab
+4. Copy and paste any coordinate string above
+5. Enter a shape name (e.g., "London Tour", "Manhattan Route")
+6. Click "📥 Import Points"
+
+## Coordinate Format Rules
+
+- **Separator**: Use forward slash (/) between coordinate pairs
+- **Format**: latitude,longitude (no spaces around comma)
+- **Precision**: Up to 6 decimal places recommended
+- **Range**: Latitude -90 to +90, Longitude -180 to +180
+
+## Creating Your Own Coordinates
+
+1. **From Google Maps**: Right-click any location → "What's here?" → copy coordinates
+2. **From GPS Device**: Export waypoints in decimal degree format
+3. **From Other Maps**: Most mapping services provide lat/lng coordinates
+4. **Manual Entry**: Use "📍 Add Coords" for individual points
+
+## Tips for Best Results
+
+- Start with 4-8 points for initial testing
+- Use landmarks or notable locations for easier identification  
+- Keep routes within reasonable geographic areas for best map display
+- Test with simple shapes before creating complex routes

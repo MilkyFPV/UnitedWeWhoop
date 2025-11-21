@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MapQuest Pro - Distribution Package</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .launch-button {
+            display: block;
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0;
+            transition: transform 0.2s;
+        }
+        .launch-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .files {
+            background: #e8f4fd;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        .file-link {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .file-link:hover {
+            text-decoration: underline;
+        }
+        .requirements {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗺️ MapQuest Pro</h1>
+        <p style="text-align: center; color: #666; font-size: 18px;">Professional Route Planning & Mission Control</p>
+        
+        <a href="MapQuest-Pro-Standalone.html" class="launch-button">
+            🚀 Launch MapQuest Pro Application
+        </a>
+        
+        <div class="requirements">
+            <strong>⚠️ System Requirements:</strong>
+            <ul>
+                <li>Modern web browser (Chrome, Firefox, Safari, Edge)</li>
+                <li>Internet connection (for map tiles)</li>
+                <li>No installation required - runs directly in browser</li>
+            </ul>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <h3>🎯 Interactive Drawing</h3>
+                <p>Click-to-draw route points with automatic connection and numbering</p>
+            </div>
+            <div class="feature">
+                <h3>📐 Measurements</h3>
+                <p>Real-time distance and area calculations with adjustable labels</p>
+            </div>
+            <div class="feature">
+                <h3>�️ Google Maps Export</h3>
+                <p>Individual point links or complete driving route with custom starting point</p>
+            </div>
+            <div class="feature">
+                <h3>🖼️ Multi-Overlay</h3>
+                <p>Import and manage multiple overlay images with full control</p>
+            </div>
+            <div class="feature">
+                <h3>📊 Shape Management</h3>
+                <p>Save, score, hide/show, and organize multiple shapes professionally</p>
+            </div>
+            <div class="feature">
+                <h3>💾 Project Backup</h3>
+                <p>Save and load complete sessions with all data preserved</p>
+            </div>
+        </div>
+
+        <div class="files">
+            <h3>📁 Package Contents</h3>
+            <div class="file-item">
+                <span><strong>MapQuest-Pro-Standalone.html</strong> - Main application</span>
+                <a href="MapQuest-Pro-Standalone.html" class="file-link">Open</a>
+            </div>
+            <div class="file-item">
+                <span>README.md - Quick start guide</span>
+                <a href="README.md" class="file-link">View</a>
+            </div>
+            <div class="file-item">
+                <span>User-Guide.md - Detailed documentation</span>
+                <a href="User-Guide.md" class="file-link">View</a>
+            </div>
+            <div class="file-item">
+                <span>examples/sample-coordinates.txt - Coordinate examples</span>
+                <a href="examples/sample-coordinates.txt" class="file-link">View</a>
+            </div>
+            <div class="file-item">
+                <span>examples/sample-project.json - Sample project</span>
+                <a href="examples/sample-project.json" class="file-link">Download</a>
+            </div>
+        </div>
+
+        <div style="background: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3>🚀 Quick Start</h3>
+            <ol>
+                <li>Click the "Launch MapQuest Pro Application" button above</li>
+                <li>Click "🎯 Draw Points" and start clicking on the map to add route points</li>
+                <li>Use "📏 Measure" to see distances and areas</li>
+                <li>Click "� Close" to complete a shape (requires 3+ points)</li>
+                <li>Click "🚀 Mission" to animate through your route</li>
+                <li>Try "🗺️ Export" to get Google Maps directions or individual point links</li>
+            </ol>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; color: #666;">
+            <p><strong>MapQuest Pro</strong> - Self-contained, professional mapping solution</p>
+            <p>No installation required • Works offline (except map tiles) • Cross-platform compatible</p>
+        </div>
+    </div>
+</body>
+</html>

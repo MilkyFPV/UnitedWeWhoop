@@ -1,0 +1,3502 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MapQuest - Complete Version</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; }
+        
+        .toolbar {
+            background: #2c3e50;
+            color: white;
+            padding: 8px;
+            display: flex;
+            gap: 0;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        /* Toolbar section styling */
+        .toolbar-section {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-right: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        .toolbar-section:last-child {
+            border-right: none;
+            margin-left: auto;
+        }
+        
+        .section-label {
+            font-size: 10px;
+            color: rgba(255,255,255,0.7);
+            text-transform: uppercase;
+            margin-right: 5px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-primary { background: #3498db; color: white; }
+        .btn-secondary { background: #95a5a6; color: white; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+        
+        .btn:hover { opacity: 0.9; }
+        .btn:disabled { background: #7f8c8d; opacity: 0.6; cursor: not-allowed; }
+        
+        .draw-mode-active { background: #e74c3c !important; }
+        
+        #map { flex: 1; }
+        
+        .status {
+            background: #34495e;
+            color: white;
+            padding: 5px 20px;
+            font-size: 12px;
+        }
+
+        /* Overlay editing styles */
+        .corner-handle {
+            width: 20px;
+            height: 20px;
+            background: #e74c3c;
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: move;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+
+        .corner-handle:hover {
+            background: #c0392b;
+            transform: scale(1.2);
+        }
+
+        .edit-controls {
+            position: absolute;
+            top: 60px;
+            left: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 1000;
+        }
+
+        .points-panel {
+            position: absolute;
+            top: 60px;
+            right: 10px;
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            max-width: 350px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+        }
+
+        .point-item {
+            margin: 5px 0;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .point-item input {
+            width: 100%;
+            padding: 2px;
+            margin: 2px 0;
+            border: 1px solid #ccc;
+            border-radius: 2px;
+        }
+
+        .google-export {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 3px;
+            border: 1px solid #e9ecef;
+        }
+
+        .google-url {
+            word-break: break-all;
+            font-size: 10px;
+            margin: 5px 0;
+            padding: 5px;
+            background: white;
+            border-radius: 2px;
+        }
+
+        .copy-btn {
+            padding: 5px 10px;
+            margin: 2px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            background: #007bff;
+            color: white;
+        }
+
+        .copy-btn:hover { background: #0056b3; }
+
+        /* Route point markers */
+        .draw-marker {
+            background: #e74c3c;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            font-weight: bold;
+            text-align: center;
+            line-height: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        #fileInput { display: none; }
+        
+        .point-counter {
+            background: #34495e;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-left: auto;
+        }
+
+        /* Mission Control Panel */
+        .mission-panel {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(52, 73, 94, 0.95);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+            min-width: 300px;
+            text-align: center;
+        }
+
+        .mission-info {
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .mission-progress {
+            background: rgba(255,255,255,0.2);
+            height: 8px;
+            border-radius: 4px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .mission-progress-bar {
+            background: #27ae60;
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .current-marker {
+            background: #f39c12;
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 20px #f39c12, 0 0 40px rgba(243, 156, 18, 0.5);
+            animation: pulse 2s infinite;
+            font-size: 16px;
+            z-index: 1000;
+        }
+
+        @keyframes pulse {
+            0% { 
+                transform: scale(1); 
+                box-shadow: 0 0 20px #f39c12, 0 0 40px rgba(243, 156, 18, 0.5);
+            }
+            50% { 
+                transform: scale(1.2); 
+                box-shadow: 0 0 30px #f39c12, 0 0 60px rgba(243, 156, 18, 0.8);
+            }
+            100% { 
+                transform: scale(1); 
+                box-shadow: 0 0 20px #f39c12, 0 0 40px rgba(243, 156, 18, 0.5);
+            }
+        }
+
+        /* Center Drag Handle for Overlay Editing */
+        .center-drag-handle {
+            width: 30px !important;
+            height: 30px !important;
+            cursor: move !important;
+            z-index: 1001 !important;
+        }
+
+        .center-drag-handle:hover {
+            transform: scale(1.2);
+        }
+
+        /* Coordinate Input Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 400px;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .modal-close:hover {
+            color: #000;
+        }
+
+        .coord-input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .coord-tab {
+            flex: 1;
+            padding: 8px 16px;
+            border: none;
+            background: #f8f9fa;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+
+        .coord-tab.active {
+            background: white;
+            border-bottom-color: #3498db;
+            color: #3498db;
+        }
+
+        .coord-tab:hover {
+            background: #e9ecef;
+        }
+
+        /* Point delete button styling */
+        .point-delete-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 20px;
+            height: 20px;
+            background: #e74c3c;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            line-height: 16px;
+            text-align: center;
+            z-index: 1001;
+        }
+
+        .point-delete-btn:hover {
+            background: #c0392b;
+            transform: scale(1.1);
+        }
+
+        /* Enhanced marker wrapper for delete functionality */
+        .marker-wrapper {
+            position: relative;
+        }
+
+        .shape-closed {
+            stroke-dasharray: none !important;
+            fill: rgba(231, 76, 60, 0.2);
+            stroke: #e74c3c;
+            stroke-width: 3;
+        }
+
+        #fileInputLoad, #fileInputProject { 
+            display: none; 
+        }
+
+        /* Shape Management Panel */
+        .shapes-management {
+            position: absolute;
+            top: 60px;
+            left: 10px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            max-width: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+        }
+
+        .shape-item {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 8px 0;
+            background: #f8f9fa;
+            position: relative;
+        }
+
+        .shape-item.active {
+            border-color: #e74c3c;
+            background: #fff5f5;
+        }
+
+        .shape-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .shape-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .shape-score {
+            background: #3498db;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .shape-info {
+            font-size: 12px;
+            color: #666;
+            margin: 4px 0;
+        }
+
+        .shape-controls {
+            display: flex;
+            gap: 5px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .shape-btn {
+            padding: 3px 8px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .shape-btn.view { background: #3498db; color: white; }
+        .shape-btn.edit { background: #f39c12; color: white; }
+        .shape-btn.delete { background: #e74c3c; color: white; }
+        .shape-btn.score { background: #27ae60; color: white; }
+
+        .score-input {
+            width: 60px;
+            padding: 2px 4px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+
+        /* Shape colors for differentiation */
+        .shape-color-0 { color: #e74c3c !important; }
+        .shape-color-1 { color: #3498db !important; }
+        .shape-color-2 { color: #2ecc71 !important; }
+        .shape-color-3 { color: #f39c12 !important; }
+        .shape-color-4 { color: #9b59b6 !important; }
+        .shape-color-5 { color: #1abc9c !important; }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <!-- OVERLAY MANAGEMENT SECTION -->
+        <div class="toolbar-section">
+            <span class="section-label">🖼️ Overlay</span>
+            <input type="file" id="fileInput" accept="image/*">
+            <button id="addOverlay" class="btn btn-primary">📁 Import</button>
+            <button id="manageOverlays" class="btn" style="background: #16a085; color: white;">&#9776; Manage</button>
+            <button id="editOverlay" class="btn btn-secondary" disabled>✏️ Edit</button>
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <label style="font-size: 11px;">Opacity:</label>
+                <input type="range" id="opacitySlider" min="0" max="100" value="100" 
+                       style="width: 70px;" disabled title="Overlay transparency">
+                <span id="opacityValue" style="font-size: 10px; min-width: 35px;">100%</span>
+            </div>
+        </div>
+
+        <!-- SHAPE DRAWING & MANAGEMENT SECTION -->
+        <div class="toolbar-section">
+            <span class="section-label">📐 Shapes</span>
+            <button id="drawMode" class="btn btn-primary">🎯 Draw Points</button>
+            <button id="closeShape" class="btn" style="background: #16a085; color: white;" disabled>&#8855; Close</button>
+            <button id="saveCurrentShape" class="btn" style="background: #27ae60; color: white;" disabled>&#9660; Save</button>
+            <button id="newShape" class="btn" style="background: #8e44ad; color: white;" disabled>🆕 New</button>
+            <button id="manageShapes" class="btn" style="background: #d35400; color: white;">&#9776; Manage</button>
+            <button id="showAllShapes" class="btn" style="background: #16a085; color: white;">👁️ All</button>
+            <button id="hideAllShapes" class="btn" style="background: #e67e22; color: white;">&#9675; Hide All</button>
+            <button id="toggleMeasurements" class="btn" style="background: #9b59b6; color: white;">📏 Measure</button>
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <label style="font-size: 11px;">Text:</label>
+                <input type="range" id="textSizeSlider" min="8" max="20" value="11" 
+                       style="width: 60px;" title="Measurement text size">
+                <span id="textSizeValue" style="font-size: 10px; min-width: 30px;">11px</span>
+            </div>
+        </div>
+
+        <!-- COORDINATES & POINTS SECTION -->
+        <div class="toolbar-section">
+            <span class="section-label">📍 Points</span>
+            <button id="addCoordinates" class="btn" style="background: #8e44ad; color: white;">➕ Add</button>
+            <button id="importBulkCoords" class="btn" style="background: #7f8c8d; color: white;">&#8681; Import</button>
+            <button id="viewPoints" class="btn btn-success" disabled>&#9776; View</button>
+            <button id="exportGoogle" class="btn btn-success" disabled>&#8599; Export</button>
+            <button id="startMission" class="btn" style="background: #9b59b6; color: white;" disabled>&#9654; Mission</button>
+        </div>
+
+        <!-- PROJECT MANAGEMENT SECTION -->
+        <div class="toolbar-section">
+            <span class="section-label">💾 Project</span>
+            <button id="saveProject" class="btn" style="background: #2980b9; color: white;">&#9660; Save</button>
+            <button id="loadProject" class="btn" style="background: #2980b9; color: white;">&#9650; Load</button>
+            <button id="clearAll" class="btn btn-danger">🗑️ Clear All</button>
+        </div>
+        
+        <!-- STATUS & INFO SECTION (right-aligned) -->
+        <div class="toolbar-section">
+            <div class="point-counter">
+                <span id="pointCount">Points: 0</span>
+                <span id="currentShapeInfo" style="margin-left: 10px;">Shape: None</span>
+                <span id="totalShapes" style="margin-left: 10px;">Shapes: 0</span>
+                <span id="shapeDistance" style="margin-left: 10px;">Distance: 0 km</span>
+            </div>
+        </div>
+    </div>
+    
+    <div id="map"></div>
+    
+    <!-- Edit Controls -->
+    <div id="editControls" class="edit-controls">
+        <h4>Edit Overlay</h4>
+        <button id="saveEdit" class="btn btn-success">✓ Save</button>
+        <button id="cancelEdit" class="btn btn-secondary">✗ Cancel</button>
+    </div>
+    
+    <!-- Points Management Panel -->
+    <div id="pointsPanel" class="points-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3>📍 Route Points</h3>
+            <button id="closePoints" class="btn btn-secondary" style="padding: 2px 6px; font-size: 12px;">✗</button>
+        </div>
+        <div id="pointsList"></div>
+        <div id="googleRoute" class="google-export" style="display: none;"></div>
+        <button id="generateRoute" class="btn btn-success" style="width: 100%; margin-top: 10px;">🗺️ Generate Google Route</button>
+    </div>
+
+    <!-- Mission Control Panel -->
+    <div id="missionPanel" class="mission-panel">
+        <h3>🚀 Mission Control</h3>
+        <div id="missionInfo" class="mission-info">Preparing mission...</div>
+        <div class="mission-progress">
+            <div id="missionProgressBar" class="mission-progress-bar"></div>
+        </div>
+        <div style="margin-top: 15px;">
+            <button id="pauseMission" class="btn btn-secondary" disabled>⏸️ Pause</button>
+            <button id="stopMission" class="btn btn-danger">🛑 Stop Mission</button>
+            <button id="speedUp" class="btn btn-primary">⚡ Speed Up</button>
+        </div>
+        <div style="margin-top: 10px; font-size: 12px;">
+            Speed: <span id="missionSpeed">Normal</span>
+        </div>
+    </div>
+    
+    <!-- Coordinate Input Modal -->
+    <div id="coordModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="modal-close">&times;</span>
+            
+            <!-- Tab Navigation -->
+            <div style="display: flex; margin-bottom: 15px; border-bottom: 1px solid #ddd;">
+                <button id="singlePointTab" class="coord-tab active" onclick="mapQuest.switchCoordTab('single')">📍 Single Point</button>
+                <button id="bulkImportTab" class="coord-tab" onclick="mapQuest.switchCoordTab('bulk')">📥 Bulk Import</button>
+            </div>
+            
+            <!-- Single Point Input -->
+            <div id="singlePointPanel" style="margin: 15px 0;">
+                <h4>Add Individual Point</h4>
+                <label>Latitude:</label>
+                <input type="number" id="latInput" class="coord-input" placeholder="e.g. 51.501844" step="any">
+                <label>Longitude:</label>
+                <input type="number" id="lngInput" class="coord-input" placeholder="e.g. -0.140591" step="any">
+                <label>Point Name (optional):</label>
+                <input type="text" id="nameInput" class="coord-input" placeholder="Enter point name">
+                <div style="text-align: center; margin-top: 15px;">
+                    <button id="addCoordPoint" class="btn btn-success">✓ Add Point</button>
+                </div>
+            </div>
+            
+            <!-- Bulk Import Panel -->
+            <div id="bulkImportPanel" style="margin: 15px 0; display: none;">
+                <h4>Import Multiple Points</h4>
+                <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                    Paste coordinates in format: lat,lng/lat,lng/lat,lng<br>
+                    Example: 51.501844,-0.140591/51.507790,-0.127911
+                </p>
+                <label>Shape Name:</label>
+                <input type="text" id="shapeNameInput" class="coord-input" placeholder="Enter shape name" style="margin-bottom: 10px;">
+                <textarea id="bulkCoordsInput" class="coord-input" rows="6" 
+                          placeholder="51.501844,-0.140591/51.507790,-0.127911/51.511396,-0.124350/51.515411,-0.124831"></textarea>
+                <div style="margin: 10px 0;">
+                    <label>
+                        <input type="checkbox" id="clearExistingPoints"> Clear existing points first
+                    </label>
+                </div>
+                <div style="text-align: center; margin-top: 15px;">
+                    <button id="importBulkPoints" class="btn btn-success">📥 Import Points</button>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button id="cancelCoord" class="btn btn-secondary">✗ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay Management Panel -->
+    <div id="overlayPanel" class="shapes-management" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3>🖼️ Overlay Management</h3>
+            <div>
+                <button id="refreshOverlays" class="btn" style="background: #3498db; color: white; padding: 2px 6px; font-size: 12px; margin-right: 5px;" title="Refresh overlay list">🔄</button>
+                <button id="closeOverlays" class="btn btn-secondary" style="padding: 2px 6px; font-size: 12px;">✗</button>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 15px; padding: 10px; background: #e8f4fd; border-radius: 5px;">
+            <div><strong>Overlay Statistics:</strong></div>
+            <div id="overlayStats" style="font-size: 12px; margin-top: 5px;">
+                Total Overlays: 0 | Active: None
+            </div>
+        </div>
+        
+        <div id="overlaysList">
+            <div style="text-align: center; color: #999; padding: 20px;">
+                No overlays added yet.<br>
+                Click "Import Overlay" to add your first overlay!
+            </div>
+        </div>
+    </div>
+
+    <!-- Shape Management Panel -->
+    <div id="shapesPanel" class="shapes-management">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3>📋 Shape Management</h3>
+            <div>
+                <button id="refreshShapes" class="btn" style="background: #3498db; color: white; padding: 2px 6px; font-size: 12px; margin-right: 5px;" title="Refresh shape list">🔄</button>
+                <button id="closeShapes" class="btn btn-secondary" style="padding: 2px 6px; font-size: 12px;">✗</button>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 15px; padding: 10px; background: #e8f4fd; border-radius: 5px;">
+            <div><strong>Project Statistics:</strong></div>
+            <div id="projectStats" style="font-size: 12px; margin-top: 5px;">
+                Total Shapes: 0 | Average Score: 0 | Total Area: 0 m²
+            </div>
+        </div>
+        
+        <div id="shapesList">
+            <div style="text-align: center; color: #999; padding: 20px;">
+                No shapes created yet.<br>
+                Start drawing to create your first shape!
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 15px;">
+            <button id="exportScores" class="btn btn-success" style="width: 100%;">📊 Export Scores to CSV</button>
+        </div>
+    </div>
+
+    <input type="file" id="fileInputLoad" accept=".json">
+    <input type="file" id="fileInputProject" accept=".json">
+    
+    <div class="status" id="status">Ready! Import an overlay or click Draw Points to start.</div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        class MapQuestComplete {
+            constructor() {
+                // Initialize map
+                this.map = L.map('map').setView([40.7128, -74.0060], 10);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(this.map);
+                
+                // State variables
+                this.overlays = []; // Array to store multiple overlays
+                this.activeOverlayId = null;
+                this.nextOverlayId = 1;
+                this.cornerMarkers = [];
+                this.originalBounds = null;
+                this.editMode = false;
+                this.drawMode = false;
+                this.routePoints = [];
+                this.routeLines = [];
+                
+                // Shape management
+                this.shapes = [];
+                this.currentShapeId = null;
+                this.nextShapeId = 1;
+                this.shapeColors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'];
+                
+                // Current shape variables
+                this.shapeClosedLine = null;
+                this.shapeArea = 0;
+                this.isShapeClosed = false;
+                
+                // Mission control variables
+                this.missionActive = false;
+                
+                // Measurements
+                this.measurementsVisible = false;
+                this.measurementLabels = [];
+                this.measurementTextSize = 11;
+                this.missionPaused = false;
+                this.currentPointIndex = 0;
+                this.missionMarker = null;
+                this.missionSpeed = 2000;
+                this.missionInterval = null;
+                this.centerMarker = null;
+                
+                this.setupEventListeners();
+                this.updateStatus('Ready! Import an overlay image or start drawing points.');
+            }
+
+            setupEventListeners() {
+                // Import overlay
+                document.getElementById('addOverlay').addEventListener('click', () => {
+                    document.getElementById('fileInput').click();
+                });
+
+                document.getElementById('fileInput').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        this.addOverlay(file);
+                    }
+                });
+
+                // Edit overlay
+                document.getElementById('editOverlay').addEventListener('click', () => {
+                    this.startEditMode();
+                });
+
+                // Opacity slider
+                document.getElementById('opacitySlider').addEventListener('input', (e) => {
+                    this.updateOverlayOpacity(e.target.value);
+                });
+
+                // Draw mode
+                document.getElementById('drawMode').addEventListener('click', () => {
+                    this.toggleDrawMode();
+                });
+
+                // View points
+                document.getElementById('viewPoints').addEventListener('click', () => {
+                    this.showPointsPanel();
+                });
+
+                // Export to Google
+                document.getElementById('exportGoogle').addEventListener('click', () => {
+                    this.exportToGoogle();
+                });
+
+                // Start mission
+                document.getElementById('startMission').addEventListener('click', () => {
+                    this.startMission();
+                });
+
+                // Add coordinates
+                document.getElementById('addCoordinates').addEventListener('click', () => {
+                    this.showCoordinateModal();
+                });
+
+                // Import bulk coordinates
+                document.getElementById('importBulkCoords').addEventListener('click', () => {
+                    this.showCoordinateModal('bulk');
+                });
+
+                // Test import feature (button removed from UI for cleaner interface)
+                // Uncomment if you need test data
+                // document.getElementById('testImport')?.addEventListener('click', () => {
+                //     this.testImportCoordinates();
+                // });
+
+                // Close shape
+                document.getElementById('closeShape').addEventListener('click', () => {
+                    this.closeShape();
+                });
+
+                // Save current shape
+                document.getElementById('saveCurrentShape').addEventListener('click', () => {
+                    this.saveCurrentShapeAndRefresh();
+                });
+
+                // Rename shape (functionality moved to shape management panel)
+                // Uncomment if you want a dedicated rename button
+                // document.getElementById('renameShape')?.addEventListener('click', () => {
+                //     this.renameCurrentShape();
+                // });
+
+                // New shape
+                document.getElementById('newShape').addEventListener('click', () => {
+                    this.startNewShape();
+                });
+
+                // Manage shapes
+                document.getElementById('manageShapes').addEventListener('click', () => {
+                    this.showShapesPanel();
+                });
+
+                // Manage overlays
+                document.getElementById('manageOverlays').addEventListener('click', () => {
+                    this.showOverlayPanel();
+                });
+
+                // Save project
+                document.getElementById('saveProject').addEventListener('click', () => {
+                    this.saveProject();
+                });
+
+                // Load project
+                document.getElementById('loadProject').addEventListener('click', () => {
+                    document.getElementById('fileInputProject').click();
+                });
+
+                document.getElementById('fileInputProject').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        this.loadProject(file);
+                    }
+                });
+
+                // Legacy load (keep for backward compatibility)
+                document.getElementById('fileInputLoad').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        this.loadMapState(file);
+                    }
+                });
+
+                // Clear all
+                document.getElementById('clearAll').addEventListener('click', () => {
+                    this.clearAll();
+                });
+
+                // Shape visibility controls
+                document.getElementById('showAllShapes').addEventListener('click', () => {
+                    console.log('Show All Shapes clicked');
+                    this.showAllShapes();
+                });
+
+                document.getElementById('hideAllShapes').addEventListener('click', () => {
+                    console.log('Hide All Shapes clicked');
+                    this.hideAllShapes();
+                });
+
+                // Toggle measurements
+                document.getElementById('toggleMeasurements').addEventListener('click', () => {
+                    this.toggleMeasurements();
+                });
+
+                // Text size slider
+                document.getElementById('textSizeSlider').addEventListener('input', (e) => {
+                    this.updateMeasurementTextSize(e.target.value);
+                });
+
+                // Edit controls
+                document.getElementById('saveEdit').addEventListener('click', () => {
+                    this.saveEdit();
+                });
+
+                document.getElementById('cancelEdit').addEventListener('click', () => {
+                    this.cancelEdit();
+                });
+
+                // Mission controls
+                document.getElementById('pauseMission').addEventListener('click', () => {
+                    this.toggleMissionPause();
+                });
+
+                document.getElementById('stopMission').addEventListener('click', () => {
+                    this.stopMission();
+                });
+
+                document.getElementById('speedUp').addEventListener('click', () => {
+                    this.cycleMissionSpeed();
+                });
+
+                // Points panel controls
+                document.getElementById('closePoints').addEventListener('click', () => {
+                    this.hidePointsPanel();
+                });
+
+                document.getElementById('generateRoute').addEventListener('click', () => {
+                    this.generateGoogleRoute();
+                });
+
+                // Shapes panel controls
+                document.getElementById('closeShapes').addEventListener('click', () => {
+                    this.hideShapesPanel();
+                });
+
+                document.getElementById('refreshShapes').addEventListener('click', () => {
+                    this.updateShapesList();
+                    this.updateProjectStats();
+                    this.updateStatus('🔄 Shape list refreshed!');
+                });
+
+                document.getElementById('exportScores').addEventListener('click', () => {
+                    this.exportScoresToCSV();
+                });
+
+                // Overlay panel controls
+                document.getElementById('closeOverlays').addEventListener('click', () => {
+                    this.hideOverlayPanel();
+                });
+
+                document.getElementById('refreshOverlays').addEventListener('click', () => {
+                    this.updateOverlaysList();
+                    this.updateStatus('🔄 Overlay list refreshed!');
+                });
+
+                // Coordinate modal events
+                document.querySelector('.modal-close').addEventListener('click', () => {
+                    this.hideCoordinateModal();
+                });
+
+                document.getElementById('addCoordPoint').addEventListener('click', () => {
+                    this.addCoordinatePoint();
+                });
+
+                document.getElementById('importBulkPoints').addEventListener('click', () => {
+                    this.importBulkCoordinates();
+                });
+
+                document.getElementById('cancelCoord').addEventListener('click', () => {
+                    this.hideCoordinateModal();
+                });
+
+                // Close modal on outside click
+                document.getElementById('coordModal').addEventListener('click', (e) => {
+                    if (e.target === document.getElementById('coordModal')) {
+                        this.hideCoordinateModal();
+                    }
+                });
+
+                // Map click events
+                this.map.on('click', (e) => {
+                    if (this.drawMode) {
+                        this.addRoutePoint(e.latlng);
+                    }
+                });
+            }
+
+            addOverlay(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    // Get current map bounds for overlay placement
+                    const bounds = this.map.getBounds();
+                    
+                    // Create overlay object
+                    const overlayId = this.nextOverlayId++;
+                    const overlayName = prompt('Enter a name for this overlay:', `Overlay ${overlayId}`) || `Overlay ${overlayId}`;
+                    
+                    // Create Leaflet image overlay
+                    const leafletOverlay = L.imageOverlay(e.target.result, bounds).addTo(this.map);
+                    
+                    // Store overlay data
+                    const overlay = {
+                        id: overlayId,
+                        name: overlayName,
+                        dataUrl: e.target.result,
+                        bounds: bounds,
+                        leafletLayer: leafletOverlay,
+                        opacity: 1.0,
+                        visible: true,
+                        created: new Date().toISOString()
+                    };
+                    
+                    this.overlays.push(overlay);
+                    this.activeOverlayId = overlayId;
+                    
+                    // Update UI - enable controls
+                    document.getElementById('editOverlay').disabled = false;
+                    document.getElementById('opacitySlider').disabled = false;
+                    document.getElementById('opacitySlider').value = 100;
+                    document.getElementById('opacityValue').textContent = '100%';
+                    
+                    // Update overlay stats
+                    this.updateOverlayStats();
+                    
+                    this.updateStatus(`✅ Overlay "${overlayName}" imported! Total overlays: ${this.overlays.length}`);
+                };
+                reader.readAsDataURL(file);
+            }
+
+            updateOverlayOpacity(value) {
+                const activeOverlay = this.overlays.find(o => o.id === this.activeOverlayId);
+                if (activeOverlay) {
+                    const opacity = value / 100;
+                    activeOverlay.leafletLayer.setOpacity(opacity);
+                    activeOverlay.opacity = opacity;
+                    document.getElementById('opacityValue').textContent = value + '%';
+                    this.updateStatus(`Overlay "${activeOverlay.name}" opacity set to ${value}%`);
+                }
+            }
+
+            startEditMode() {
+                console.log('startEditMode called');
+                console.log('Active overlay ID:', this.activeOverlayId);
+                console.log('Total overlays:', this.overlays.length);
+                
+                const activeOverlay = this.overlays.find(o => o.id === this.activeOverlayId);
+                if (!activeOverlay) {
+                    console.error('No active overlay found!');
+                    this.updateStatus('⚠️ No active overlay selected');
+                    return;
+                }
+                
+                console.log('Active overlay found:', activeOverlay);
+                console.log('Overlay bounds:', activeOverlay.bounds);
+                
+                this.editMode = true;
+                this.originalBounds = activeOverlay.bounds;
+                this.overlay = activeOverlay.leafletLayer;
+                this.overlayBounds = activeOverlay.bounds;
+                
+                // Show edit controls
+                document.getElementById('editControls').style.display = 'block';
+                console.log('Edit controls shown');
+                
+                // Create corner markers
+                console.log('Creating corner markers...');
+                this.createCornerMarkers();
+                
+                // Add center drag handle for moving entire overlay
+                console.log('Adding center drag handle...');
+                this.addCenterDragHandle();
+                
+                console.log('Corner markers created:', this.cornerMarkers.length);
+                console.log('Center marker created:', this.centerMarker ? 'Yes' : 'No');
+                
+                this.updateStatus('✏️ Edit mode: Drag corners to resize, drag center to move overlay');
+            }
+
+            createCornerMarkers() {
+                const activeOverlay = this.overlays.find(o => o.id === this.activeOverlayId);
+                if (!activeOverlay) return;
+                
+                const bounds = activeOverlay.bounds;
+                const corners = [
+                    bounds.getNorthWest(),
+                    bounds.getNorthEast(), 
+                    bounds.getSouthEast(),
+                    bounds.getSouthWest()
+                ];
+
+                corners.forEach((corner, index) => {
+                    const marker = L.marker(corner, {
+                        icon: L.divIcon({
+                            className: 'corner-handle',
+                            html: '<div style="width: 20px; height: 20px; background: #e74c3c; border: 2px solid white; border-radius: 50%; cursor: move; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
+                        }),
+                        draggable: true
+                    }).addTo(this.map);
+
+                    marker.on('drag', () => {
+                        this.updateOverlayFromMarkers();
+                    });
+
+                    this.cornerMarkers.push(marker);
+                });
+            }
+
+            updateOverlayFromMarkers() {
+                if (this.cornerMarkers.length !== 4) return;
+                
+                const positions = this.cornerMarkers.map(marker => marker.getLatLng());
+                const newBounds = L.latLngBounds(positions);
+                
+                this.overlayBounds = newBounds;
+                const activeOverlay = this.overlays.find(o => o.id === this.activeOverlayId);
+                if (activeOverlay) {
+                    activeOverlay.leafletLayer.setBounds(newBounds);
+                    activeOverlay.bounds = newBounds;
+                }
+            }
+
+            addCenterDragHandle() {
+                const activeOverlay = this.overlays.find(o => o.id === this.activeOverlayId);
+                if (!activeOverlay) return;
+                
+                const bounds = activeOverlay.bounds;
+                const center = bounds.getCenter();
+                
+                // Create center drag handle
+                const centerMarker = L.marker(center, {
+                    icon: L.divIcon({
+                        className: 'center-drag-handle',
+                        html: '<div style="width: 30px; height: 30px; background: #3498db; border: 3px solid white; border-radius: 50%; cursor: move; box-shadow: 0 2px 8px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">✥</div>',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    }),
+                    draggable: true
+                }).addTo(this.map);
+                
+                let startCenter = null;
+                let startBounds = null;
+                
+                centerMarker.on('dragstart', () => {
+                    startCenter = centerMarker.getLatLng();
+                    startBounds = activeOverlay.bounds;
+                });
+                
+                centerMarker.on('drag', () => {
+                    const currentPos = centerMarker.getLatLng();
+                    const latDiff = currentPos.lat - startCenter.lat;
+                    const lngDiff = currentPos.lng - startCenter.lng;
+                    
+                    // Calculate new bounds
+                    const newBounds = L.latLngBounds([
+                        [startBounds.getSouth() + latDiff, startBounds.getWest() + lngDiff],
+                        [startBounds.getNorth() + latDiff, startBounds.getEast() + lngDiff]
+                    ]);
+                    
+                    // Update overlay position
+                    activeOverlay.leafletLayer.setBounds(newBounds);
+                    activeOverlay.bounds = newBounds;
+                    this.overlayBounds = newBounds;
+                    
+                    // Update corner markers positions
+                    this.updateCornerMarkersPositions(newBounds);
+                });
+                
+                centerMarker.on('dragend', () => {
+                    this.updateStatus('✅ Overlay moved! Click Save to keep changes');
+                });
+                
+                this.centerMarker = centerMarker;
+            }
+
+            updateCornerMarkersPositions(newBounds) {
+                if (this.cornerMarkers.length !== 4) return;
+                
+                const corners = [
+                    newBounds.getNorthWest(),
+                    newBounds.getNorthEast(), 
+                    newBounds.getSouthEast(),
+                    newBounds.getSouthWest()
+                ];
+                
+                this.cornerMarkers.forEach((marker, index) => {
+                    marker.setLatLng(corners[index]);
+                });
+            }
+
+            saveEdit() {
+                const activeOverlay = this.overlays.find(o => o.id === this.activeOverlayId);
+                if (activeOverlay) {
+                    activeOverlay.bounds = this.overlayBounds;
+                    activeOverlay.leafletLayer.setBounds(this.overlayBounds);
+                }
+                this.exitEditMode();
+                this.updateStatus('✅ Overlay changes saved!');
+            }
+
+            cancelEdit() {
+                const activeOverlay = this.overlays.find(o => o.id === this.activeOverlayId);
+                if (this.originalBounds && activeOverlay) {
+                    this.overlayBounds = this.originalBounds;
+                    activeOverlay.bounds = this.originalBounds;
+                    activeOverlay.leafletLayer.setBounds(this.originalBounds);
+                }
+                this.exitEditMode();
+                this.updateStatus('Edit cancelled - overlay restored to original position');
+            }
+
+            exitEditMode() {
+                this.editMode = false;
+                
+                // Hide edit controls
+                document.getElementById('editControls').style.display = 'none';
+                
+                // Remove corner markers
+                this.cornerMarkers.forEach(marker => {
+                    this.map.removeLayer(marker);
+                });
+                this.cornerMarkers = [];
+                
+                // Remove center drag handle
+                if (this.centerMarker) {
+                    this.map.removeLayer(this.centerMarker);
+                    this.centerMarker = null;
+                }
+            }
+
+            toggleDrawMode() {
+                this.drawMode = !this.drawMode;
+                const btn = document.getElementById('drawMode');
+                
+                if (this.drawMode) {
+                    btn.textContent = '🛑 Stop Drawing';
+                    btn.classList.add('draw-mode-active');
+                    this.map.getContainer().style.cursor = 'crosshair';
+                    this.updateStatus('🎯 DRAW MODE: Click on map to add route points');
+                } else {
+                    btn.textContent = '🎯 Draw Points';
+                    btn.classList.remove('draw-mode-active');
+                    this.map.getContainer().style.cursor = '';
+                    this.updateStatus('Draw mode off');
+                }
+            }
+
+            addRoutePoint(latlng, customName = null) {
+                const pointNumber = this.routePoints.length + 1;
+                
+                // Create custom marker with delete button
+                const markerHtml = `
+                    <div class="marker-wrapper">
+                        <div style="position: relative;">
+                            ${pointNumber}
+                            <div class="point-delete-btn" onclick="mapQuest.deletePoint(${pointNumber - 1}); event.stopPropagation();">×</div>
+                        </div>
+                    </div>
+                `;
+                
+                const marker = L.marker([latlng.lat, latlng.lng], {
+                    icon: L.divIcon({
+                        className: 'draw-marker',
+                        html: markerHtml,
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10]
+                    })
+                }).addTo(this.map);
+
+                // Add popup with coordinates and delete option
+                marker.bindPopup(`
+                    <strong>Point ${pointNumber}</strong><br>
+                    Lat: ${latlng.lat.toFixed(6)}<br>
+                    Lng: ${latlng.lng.toFixed(6)}<br>
+                    <button onclick="mapQuest.deletePoint(${pointNumber - 1})" 
+                            style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 3px; margin-top: 5px; cursor: pointer;">
+                        🗑️ Delete Point
+                    </button>
+                `);
+
+                // Create route point object
+                const routePoint = {
+                    id: pointNumber,
+                    marker: marker,
+                    lat: latlng.lat,
+                    lng: latlng.lng,
+                    name: customName || `Point ${pointNumber}`,
+                    description: ''
+                };
+
+                this.routePoints.push(routePoint);
+
+                // Connect to previous point
+                if (this.routePoints.length > 1) {
+                    const prevPoint = this.routePoints[this.routePoints.length - 2];
+                    const line = L.polyline([
+                        [prevPoint.lat, prevPoint.lng],
+                        [latlng.lat, latlng.lng]
+                    ], {color: '#e74c3c', weight: 3}).addTo(this.map);
+                    this.routeLines.push(line);
+                }
+
+                // Update UI
+                this.updatePointCounter();
+                this.updateShapeInfo();
+                document.getElementById('viewPoints').disabled = false;
+                document.getElementById('exportGoogle').disabled = false;
+                document.getElementById('startMission').disabled = this.routePoints.length < 2;
+                document.getElementById('closeShape').disabled = this.routePoints.length < 3 || this.isShapeClosed;
+                document.getElementById('saveCurrentShape').disabled = this.routePoints.length === 0;
+                // document.getElementById('renameShape')?.disabled = this.routePoints.length === 0; // Button removed
+                document.getElementById('newShape').disabled = this.routePoints.length === 0;
+
+                this.updateStatus(`Route point ${pointNumber} added! Total: ${this.routePoints.length}`);
+                
+                // Refresh measurements if visible
+                if (this.measurementsVisible) {
+                    this.showMeasurements();
+                }
+            }
+
+            updatePointCounter() {
+                document.getElementById('pointCount').textContent = `Points: ${this.routePoints.length}`;
+            }
+
+            showPointsPanel() {
+                document.getElementById('pointsPanel').style.display = 'block';
+                this.updatePointsList();
+            }
+
+            hidePointsPanel() {
+                document.getElementById('pointsPanel').style.display = 'none';
+            }
+
+            updatePointsList() {
+                const list = document.getElementById('pointsList');
+                list.innerHTML = '';
+
+                this.routePoints.forEach((point, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'point-item';
+                    div.innerHTML = `
+                        <div><strong>Point ${point.id}</strong></div>
+                        <div>Lat: ${point.lat.toFixed(6)}, Lng: ${point.lng.toFixed(6)}</div>
+                        <input type="text" placeholder="Point name" value="${point.name}" 
+                               onchange="mapQuest.updatePointName(${index}, this.value)">
+                        <input type="text" placeholder="Description" value="${point.description}" 
+                               onchange="mapQuest.updatePointDescription(${index}, this.value)">
+                    `;
+                    list.appendChild(div);
+                });
+            }
+
+            updatePointName(index, name) {
+                if (this.routePoints[index]) {
+                    this.routePoints[index].name = name;
+                }
+            }
+
+            updatePointDescription(index, description) {
+                if (this.routePoints[index]) {
+                    this.routePoints[index].description = description;
+                }
+            }
+
+            showPointLinksPanel() {
+                // Create a detailed list of all points with individual Google Maps links
+                let html = '<div style="max-height: 500px; overflow-y: auto;">';
+                html += '<h4 style="margin-top: 0;">📍 Individual Point Locations</h4>';
+                html += '<p style="font-size: 12px; color: #666;">Click any link to open that location in Google Maps</p>';
+                
+                this.routePoints.forEach((point, index) => {
+                    const lat = point.lat.toFixed(6);
+                    const lng = point.lng.toFixed(6);
+                    const googleUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+                    
+                    html += `
+                        <div style="border: 1px solid #ddd; padding: 10px; margin: 8px 0; border-radius: 5px; background: #f9f9f9;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                <strong style="color: #2c3e50;">Point ${point.id}: ${point.name || 'Unnamed'}</strong>
+                                <button onclick="mapQuest.copyToClipboard('${lat},${lng}')" 
+                                        class="btn btn-secondary" 
+                                        style="padding: 2px 6px; font-size: 11px;">
+                                    📋 Copy Coords
+                                </button>
+                            </div>
+                            <div style="font-family: monospace; font-size: 12px; color: #555; margin: 5px 0;">
+                                📐 Latitude: ${lat}<br>
+                                📐 Longitude: ${lng}
+                            </div>
+                            ${point.description ? `<div style="font-size: 11px; color: #777; font-style: italic; margin: 5px 0;">${point.description}</div>` : ''}
+                            <div style="margin-top: 8px;">
+                                <a href="${googleUrl}" target="_blank" 
+                                   style="display: inline-block; background: #4285f4; color: white; padding: 5px 10px; 
+                                          text-decoration: none; border-radius: 4px; font-size: 12px;">
+                                    🗺️ Open in Google Maps
+                                </a>
+                                <button onclick="mapQuest.copyToClipboard('${googleUrl}')" 
+                                        class="btn" 
+                                        style="background: #34a853; color: white; padding: 5px 10px; font-size: 12px; margin-left: 5px;">
+                                    � Copy Link
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                // Add option to copy all coordinates
+                html += `
+                    <div style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 5px;">
+                        <strong>📋 Copy All Coordinates:</strong>
+                        <div style="margin-top: 8px;">
+                            <button onclick="mapQuest.copyAllCoordinates('simple')" class="btn btn-primary" style="margin: 2px;">
+                                Simple List
+                            </button>
+                            <button onclick="mapQuest.copyAllCoordinates('detailed')" class="btn btn-primary" style="margin: 2px;">
+                                Detailed List
+                            </button>
+                            <button onclick="mapQuest.copyAllCoordinates('csv')" class="btn btn-primary" style="margin: 2px;">
+                                CSV Format
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                html += '</div>';
+                
+                // Show in the points panel
+                document.getElementById('googleRoute').innerHTML = html;
+                document.getElementById('googleRoute').style.display = 'block';
+                document.getElementById('pointsPanel').style.display = 'block';
+                
+                this.updateStatus(`✅ Generated ${this.routePoints.length} individual Google Maps links!`);
+            }
+
+            exportToGoogle() {
+                if (this.routePoints.length === 0) {
+                    alert('No route points to export! Click "🎯 Draw Points" first.');
+                    return;
+                }
+                
+                // Show modal with options
+                this.showGoogleExportModal();
+            }
+
+            showGoogleExportModal() {
+                // Create a modal to choose export type
+                let html = '<div style="padding: 20px;">';
+                html += '<h3 style="margin-top: 0;">🗺️ Export to Google Maps</h3>';
+                html += '<p>Choose how you want to export your points:</p>';
+                html += '<div style="margin: 20px 0;">';
+                html += '<button onclick="mapQuest.showPointLinksPanel()" class="btn btn-primary" style="width: 100%; margin: 5px 0; padding: 12px;">📍 Individual Point Links<br><small style="opacity: 0.8;">Get separate links and coordinates for each point</small></button>';
+                html += '<button onclick="mapQuest.showStartingPointInput()" class="btn btn-primary" style="width: 100%; margin: 5px 0; padding: 12px;">🚗 Create Driving Route<br><small style="opacity: 0.8;">Enter a starting location and get turn-by-turn directions</small></button>';
+                html += '</div>';
+                html += '</div>';
+                
+                document.getElementById('googleRoute').innerHTML = html;
+                document.getElementById('googleRoute').style.display = 'block';
+                document.getElementById('pointsPanel').style.display = 'block';
+            }
+
+            showStartingPointInput() {
+                let html = '<div style="padding: 15px;">';
+                html += '<h4 style="margin-top: 0;">🚗 Create Driving Route</h4>';
+                html += '<p style="font-size: 13px; color: #666;">Enter your starting location (address, place name, or coordinates):</p>';
+                html += '<input type="text" id="startingLocationInput" placeholder="e.g., 123 Main St, New York, NY or 40.7128,-74.0060" style="width: 100%; padding: 8px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px;">';
+                html += '<div style="margin-top: 15px;">';
+                html += '<button onclick="mapQuest.generateDrivingRoute()" class="btn btn-primary" style="margin-right: 5px;">🚀 Generate Route</button>';
+                html += '<button onclick="mapQuest.showGoogleExportModal()" class="btn btn-secondary">← Back</button>';
+                html += '</div>';
+                html += '</div>';
+                
+                document.getElementById('googleRoute').innerHTML = html;
+                setTimeout(() => {
+                    const input = document.getElementById('startingLocationInput');
+                    if (input) input.focus();
+                }, 100);
+            }
+
+            generateDrivingRoute() {
+                const startingLocation = document.getElementById('startingLocationInput')?.value.trim();
+                
+                if (!startingLocation) {
+                    alert('Please enter a starting location!');
+                    return;
+                }
+                
+                // Build Google Maps directions URL
+                const baseUrl = 'https://www.google.com/maps/dir/';
+                
+                // Start with the starting location
+                let waypoints = [encodeURIComponent(startingLocation)];
+                
+                // Add all route points
+                this.routePoints.forEach(point => {
+                    waypoints.push(`${point.lat.toFixed(6)},${point.lng.toFixed(6)}`);
+                });
+                
+                const googleUrl = baseUrl + waypoints.join('/');
+                
+                // Display the result
+                let html = '<div style="padding: 15px;">';
+                html += '<h4 style="margin-top: 0; color: #27ae60;">✅ Driving Route Created!</h4>';
+                html += '<div style="background: #f0f8ff; padding: 12px; border-radius: 5px; margin: 10px 0;">';
+                html += `<strong>Starting Point:</strong> ${startingLocation}<br>`;
+                html += `<strong>Destinations:</strong> ${this.routePoints.length} points<br>`;
+                html += `<strong>Route Order:</strong> ${this.routePoints.map((p, i) => `${i + 1}. ${p.name || 'Point ' + p.id}`).join(' → ')}`;
+                html += '</div>';
+                html += '<div style="margin-top: 15px;">';
+                html += `<button onclick="window.open('${googleUrl}', '_blank')" class="btn" style="background: #4285f4; color: white; padding: 10px 15px; margin-right: 5px;">🗺️ Open Route in Google Maps</button>`;
+                html += `<button onclick="mapQuest.copyToClipboard('${googleUrl}')" class="btn" style="background: #34a853; color: white; padding: 10px 15px; margin-right: 5px;">📋 Copy Link</button>`;
+                html += '<button onclick="mapQuest.showGoogleExportModal()" class="btn btn-secondary">← Back</button>';
+                html += '</div>';
+                html += '</div>';
+                
+                document.getElementById('googleRoute').innerHTML = html;
+                this.updateStatus(`✅ Created driving route from "${startingLocation}" through ${this.routePoints.length} points!`);
+            }
+
+            copyAllCoordinates(format) {
+                let text = '';
+                
+                if (format === 'simple') {
+                    // Simple lat,lng format
+                    text = this.routePoints.map(p => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`).join('\n');
+                    
+                } else if (format === 'detailed') {
+                    // Detailed format with names and links
+                    text = this.routePoints.map((p, i) => {
+                        const lat = p.lat.toFixed(6);
+                        const lng = p.lng.toFixed(6);
+                        const googleUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+                        return `Point ${p.id}: ${p.name || 'Unnamed'}\nCoordinates: ${lat}, ${lng}\nGoogle Maps: ${googleUrl}\n`;
+                    }).join('\n');
+                    
+                } else if (format === 'csv') {
+                    // CSV format
+                    text = 'Point Number,Name,Latitude,Longitude,Google Maps Link\n';
+                    text += this.routePoints.map(p => {
+                        const lat = p.lat.toFixed(6);
+                        const lng = p.lng.toFixed(6);
+                        const googleUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+                        return `${p.id},"${p.name || 'Unnamed'}",${lat},${lng},${googleUrl}`;
+                    }).join('\n');
+                }
+                
+                this.copyToClipboard(text);
+                this.updateStatus(`✅ Copied all coordinates in ${format} format!`);
+            }
+
+            copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    this.updateStatus('✅ Google Maps URL copied to clipboard!');
+                }).catch(() => {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    this.updateStatus('✅ Google Maps URL copied to clipboard!');
+                });
+            }
+
+            startMission() {
+                if (this.routePoints.length < 2) {
+                    alert('You need at least 2 points to start a mission!');
+                    return;
+                }
+
+                this.missionActive = true;
+                this.missionPaused = false;
+                this.currentPointIndex = 0;
+
+                // Show mission panel
+                document.getElementById('missionPanel').style.display = 'block';
+                document.getElementById('pauseMission').disabled = false;
+
+                // Zoom to first point
+                const firstPoint = this.routePoints[0];
+                this.map.setView([firstPoint.lat, firstPoint.lng], 16, {
+                    animate: true,
+                    duration: 1.5
+                });
+
+                // Create mission marker at first point
+                this.missionMarker = L.marker([firstPoint.lat, firstPoint.lng], {
+                    icon: L.divIcon({
+                        className: 'current-marker',
+                        html: '🚁',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    })
+                }).addTo(this.map);
+
+                // Update mission info for first point
+                document.getElementById('missionInfo').textContent = 
+                    `Starting at Point ${firstPoint.id} - ${firstPoint.name || 'Unnamed'}`;
+
+                // Start mission animation after zoom completes
+                this.updateStatus('🚀 Mission started! Zooming to starting point...');
+                setTimeout(() => {
+                    this.animateToNextPoint();
+                }, 2000); // Wait for zoom animation to complete
+            }
+
+            animateToNextPoint() {
+                if (!this.missionActive || this.missionPaused) return;
+
+                if (this.currentPointIndex >= this.routePoints.length - 1) {
+                    this.completeMission();
+                    return;
+                }
+
+                const currentPoint = this.routePoints[this.currentPointIndex];
+                const nextPoint = this.routePoints[this.currentPointIndex + 1];
+
+                // Update mission info
+                document.getElementById('missionInfo').textContent = 
+                    `Flying from Point ${currentPoint.id} to Point ${nextPoint.id}`;
+                
+                // Update status with point names if available
+                const currentName = currentPoint.name || `Point ${currentPoint.id}`;
+                const nextName = nextPoint.name || `Point ${nextPoint.id}`;
+                this.updateStatus(`🚁 Flying from ${currentName} to ${nextName}`);
+
+                // Update progress
+                const progress = ((this.currentPointIndex + 1) / this.routePoints.length) * 100;
+                document.getElementById('missionProgressBar').style.width = progress + '%';
+
+                // Animate marker to next point - follow the exact path
+                this.animateMarker(currentPoint, nextPoint, () => {
+                    this.currentPointIndex++;
+                    
+                    if (this.missionActive && !this.missionPaused) {
+                        // Show arrival status
+                        const arrivedName = nextPoint.name || `Point ${nextPoint.id}`;
+                        this.updateStatus(`📍 Arrived at ${arrivedName}`);
+                        
+                        // Brief pause at each point before continuing
+                        setTimeout(() => this.animateToNextPoint(), 800);
+                    }
+                });
+            }
+
+            animateMarker(fromPoint, toPoint, callback) {
+                const steps = 60; // Increased for smoother animation
+                let currentStep = 0;
+
+                const latDiff = (toPoint.lat - fromPoint.lat) / steps;
+                const lngDiff = (toPoint.lng - fromPoint.lng) / steps;
+
+                const animate = () => {
+                    if (!this.missionActive || this.missionPaused || currentStep >= steps) {
+                        if (callback && currentStep >= steps) {
+                            // Ensure marker ends exactly at target point
+                            this.missionMarker.setLatLng([toPoint.lat, toPoint.lng]);
+                            // Center map on reached point
+                            this.map.panTo([toPoint.lat, toPoint.lng], {
+                                animate: true,
+                                duration: 0.3
+                            });
+                            callback();
+                        }
+                        return;
+                    }
+
+                    const newLat = fromPoint.lat + (latDiff * currentStep);
+                    const newLng = fromPoint.lng + (lngDiff * currentStep);
+                    
+                    // Update marker position
+                    this.missionMarker.setLatLng([newLat, newLng]);
+                    
+                    // Pan map to follow marker smoothly (every few steps to avoid jittery movement)
+                    if (currentStep % 5 === 0) {
+                        this.map.panTo([newLat, newLng], {
+                            animate: false // Smooth following without animation
+                        });
+                    }
+                    
+                    currentStep++;
+                    setTimeout(animate, this.missionSpeed / steps);
+                };
+
+                animate();
+            }
+
+            completeMission() {
+                this.missionActive = false;
+                
+                // Update mission panel
+                document.getElementById('missionInfo').textContent = '✅ Mission Complete!';
+                document.getElementById('missionProgressBar').style.width = '100%';
+                
+                // Show completion status
+                const finalPoint = this.routePoints[this.routePoints.length - 1];
+                const finalName = finalPoint.name || `Point ${finalPoint.id}`;
+                this.updateStatus(`🎉 Mission completed! Arrived at final destination: ${finalName}`);
+                
+                // Zoom out to show entire route
+                setTimeout(() => {
+                    if (this.routePoints.length > 1) {
+                        const group = new L.featureGroup(this.routePoints.map(p => p.marker));
+                        this.map.fitBounds(group.getBounds().pad(0.1), {
+                            animate: true,
+                            duration: 1.5
+                        });
+                    }
+                }, 1000);
+                
+                // Auto-close mission panel after showing overview
+                setTimeout(() => {
+                    this.stopMission();
+                }, 4000);
+            }
+
+            toggleMissionPause() {
+                if (!this.missionActive) return;
+
+                this.missionPaused = !this.missionPaused;
+                const btn = document.getElementById('pauseMission');
+
+                if (this.missionPaused) {
+                    btn.textContent = '▶️ Resume';
+                    this.updateStatus('⏸️ Mission paused');
+                } else {
+                    btn.textContent = '⏸️ Pause';
+                    this.updateStatus('▶️ Mission resumed');
+                    this.animateToNextPoint();
+                }
+            }
+
+            stopMission() {
+                this.missionActive = false;
+                this.missionPaused = false;
+
+                // Remove mission marker
+                if (this.missionMarker) {
+                    this.map.removeLayer(this.missionMarker);
+                    this.missionMarker = null;
+                }
+
+                // Hide mission panel
+                document.getElementById('missionPanel').style.display = 'none';
+                
+                // Reset mission controls
+                document.getElementById('pauseMission').textContent = '⏸️ Pause';
+                document.getElementById('pauseMission').disabled = true;
+
+                this.updateStatus('🛑 Mission stopped');
+            }
+
+            cycleMissionSpeed() {
+                const speeds = [
+                    { value: 4000, name: 'Slow' },
+                    { value: 2000, name: 'Normal' },
+                    { value: 1000, name: 'Fast' },
+                    { value: 500, name: 'Very Fast' }
+                ];
+
+                const currentIndex = speeds.findIndex(s => s.value === this.missionSpeed);
+                const nextIndex = (currentIndex + 1) % speeds.length;
+                
+                this.missionSpeed = speeds[nextIndex].value;
+                document.getElementById('missionSpeed').textContent = speeds[nextIndex].name;
+                
+                this.updateStatus(`Mission speed: ${speeds[nextIndex].name}`);
+            }
+
+            clearAll(showConfirmation = true) {
+                if (showConfirmation && !confirm('Clear all overlays and points? This cannot be undone.')) {
+                    return;
+                }
+
+                // Stop any active mission
+                this.stopMission();
+
+                // Clear all overlays
+                this.overlays.forEach(overlay => {
+                    if (overlay.leafletLayer && this.map.hasLayer(overlay.leafletLayer)) {
+                        this.map.removeLayer(overlay.leafletLayer);
+                    }
+                });
+                this.overlays = [];
+                this.activeOverlayId = null;
+                this.nextOverlayId = 1;
+
+                // Clear route points
+                this.routePoints.forEach(point => {
+                    if (point.marker) {
+                        this.map.removeLayer(point.marker);
+                    }
+                });
+                this.routePoints = [];
+
+                // Clear route lines
+                this.routeLines.forEach(line => {
+                    this.map.removeLayer(line);
+                });
+                this.routeLines = [];
+
+                // Clear shape closing line
+                if (this.shapeClosedLine) {
+                    this.map.removeLayer(this.shapeClosedLine);
+                    this.shapeClosedLine = null;
+                }
+
+                // Clear corner markers if in edit mode
+                this.cornerMarkers.forEach(marker => {
+                    this.map.removeLayer(marker);
+                });
+                this.cornerMarkers = [];
+
+                // Clear all shapes
+                this.shapes = [];
+                this.currentShapeId = null;
+                this.nextShapeId = 1;
+
+                // Reset shape variables
+                this.isShapeClosed = false;
+                this.shapeArea = 0;
+
+                // Reset UI
+                this.editMode = false;
+                this.drawMode = false;
+                document.getElementById('editOverlay').disabled = true;
+                document.getElementById('opacitySlider').disabled = true;
+                document.getElementById('viewPoints').disabled = true;
+                document.getElementById('exportGoogle').disabled = true;
+                document.getElementById('startMission').disabled = true;
+                document.getElementById('closeShape').disabled = true;
+                document.getElementById('closeShape').textContent = '🔗 Close Shape';
+                document.getElementById('newShape').disabled = true;
+                document.getElementById('drawMode').textContent = '🎯 Draw Points';
+                document.getElementById('drawMode').classList.remove('draw-mode-active');
+                document.getElementById('editControls').style.display = 'none';
+                document.getElementById('pointsPanel').style.display = 'none';
+                document.getElementById('missionPanel').style.display = 'none';
+                document.getElementById('shapesPanel').style.display = 'none';
+                this.map.getContainer().style.cursor = '';
+                
+                // Reset opacity slider
+                document.getElementById('opacitySlider').value = 100;
+                document.getElementById('opacityValue').textContent = '100%';
+                
+                this.updatePointCounter();
+                this.updateShapeInfo();
+                this.updateShapeCounter();
+                this.updateStatus('✅ All cleared! Ready for new overlay and points.');
+            }
+
+            showCoordinateModal(tab = 'single') {
+                document.getElementById('coordModal').style.display = 'block';
+                this.switchCoordTab(tab);
+                if (tab === 'single') {
+                    document.getElementById('latInput').focus();
+                } else {
+                    document.getElementById('bulkCoordsInput').focus();
+                }
+            }
+
+            switchCoordTab(tabName) {
+                // Update tab buttons
+                document.getElementById('singlePointTab').classList.remove('active');
+                document.getElementById('bulkImportTab').classList.remove('active');
+                
+                // Update panels
+                document.getElementById('singlePointPanel').style.display = 'none';
+                document.getElementById('bulkImportPanel').style.display = 'none';
+                
+                if (tabName === 'single') {
+                    document.getElementById('singlePointTab').classList.add('active');
+                    document.getElementById('singlePointPanel').style.display = 'block';
+                } else {
+                    document.getElementById('bulkImportTab').classList.add('active');
+                    document.getElementById('bulkImportPanel').style.display = 'block';
+                }
+            }
+
+            hideCoordinateModal() {
+                document.getElementById('coordModal').style.display = 'none';
+                document.getElementById('latInput').value = '';
+                document.getElementById('lngInput').value = '';
+                document.getElementById('nameInput').value = '';
+                document.getElementById('bulkCoordsInput').value = '';
+                document.getElementById('clearExistingPoints').checked = false;
+                this.switchCoordTab('single');
+            }
+
+            addCoordinatePoint() {
+                const lat = parseFloat(document.getElementById('latInput').value);
+                const lng = parseFloat(document.getElementById('lngInput').value);
+                const name = document.getElementById('nameInput').value.trim();
+
+                if (isNaN(lat) || isNaN(lng)) {
+                    alert('Please enter valid latitude and longitude values.');
+                    return;
+                }
+
+                if (lat < -90 || lat > 90) {
+                    alert('Latitude must be between -90 and 90 degrees.');
+                    return;
+                }
+
+                if (lng < -180 || lng > 180) {
+                    alert('Longitude must be between -180 and 180 degrees.');
+                    return;
+                }
+
+                // Create the point
+                const latlng = { lat: lat, lng: lng };
+                this.addRoutePoint(latlng, name);
+
+                // Pan to the new point
+                this.map.panTo([lat, lng]);
+
+                this.hideCoordinateModal();
+                this.updateStatus(`Point added at coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+            }
+
+            importBulkCoordinates() {
+                const coordsText = document.getElementById('bulkCoordsInput').value.trim();
+                const clearExisting = document.getElementById('clearExistingPoints').checked;
+                const shapeName = document.getElementById('shapeNameInput').value.trim();
+                
+                if (!coordsText) {
+                    alert('Please enter coordinates to import.');
+                    return;
+                }
+                
+                // Store the custom shape name for later use
+                this.pendingShapeName = shapeName || null;
+                
+                // Clear existing points if requested
+                if (clearExisting) {
+                    this.clearCurrentShape();
+                }
+                
+                // Parse coordinates
+                const coordPairs = coordsText.split('/');
+                let successCount = 0;
+                let errorCount = 0;
+                
+                coordPairs.forEach((coordPair, index) => {
+                    const trimmed = coordPair.trim();
+                    if (!trimmed) return;
+                    
+                    const [latStr, lngStr] = trimmed.split(',');
+                    const lat = parseFloat(latStr);
+                    const lng = parseFloat(lngStr);
+                    
+                    if (isNaN(lat) || isNaN(lng)) {
+                        errorCount++;
+                        console.warn(`Invalid coordinate pair: ${trimmed}`);
+                        return;
+                    }
+                    
+                    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                        errorCount++;
+                        console.warn(`Out of range coordinate pair: ${trimmed}`);
+                        return;
+                    }
+                    
+                    // Add point with slight delay to ensure proper ordering
+                    setTimeout(() => {
+                        this.addRoutePoint({ lat: lat, lng: lng }, `Imported ${index + 1}`);
+                    }, index * 50);
+                    
+                    successCount++;
+                });
+                
+                this.hideCoordinateModal();
+                
+                if (successCount > 0) {
+                    this.updateStatus(`✅ Imported ${successCount} points successfully${errorCount > 0 ? ` (${errorCount} errors)` : ''}`);
+                    
+                    // Pan to show all imported points
+                    setTimeout(() => {
+                        if (this.routePoints.length > 0) {
+                            const group = new L.featureGroup(this.routePoints.map(p => p.marker));
+                            this.map.fitBounds(group.getBounds().pad(0.1));
+                        }
+                    }, successCount * 50 + 200);
+                } else {
+                    alert('No valid coordinates were imported. Please check the format.');
+                }
+            }
+
+            deletePoint(pointIndex) {
+                if (pointIndex < 0 || pointIndex >= this.routePoints.length) return;
+                
+                const point = this.routePoints[pointIndex];
+                if (!confirm(`Delete ${point.name}?`)) {
+                    return;
+                }
+                
+                // Remove marker from map
+                if (point.marker) {
+                    this.map.removeLayer(point.marker);
+                }
+                
+                // Remove point from array
+                this.routePoints.splice(pointIndex, 1);
+                
+                // Clear all lines
+                this.routeLines.forEach(line => {
+                    this.map.removeLayer(line);
+                });
+                this.routeLines = [];
+                
+                // Clear closing line if exists
+                if (this.shapeClosedLine) {
+                    this.map.removeLayer(this.shapeClosedLine);
+                    this.shapeClosedLine = null;
+                    this.isShapeClosed = false;
+                }
+                
+                // Recreate all markers with updated numbers and lines
+                this.recreateMarkersAndLines();
+                
+                this.updatePointCounter();
+                this.updateShapeInfo();
+                
+                // Update UI states
+                document.getElementById('closeShape').disabled = this.routePoints.length < 3 || this.isShapeClosed;
+                document.getElementById('closeShape').textContent = '🔗 Close Shape';
+                document.getElementById('newShape').disabled = this.routePoints.length === 0;
+                
+                this.updateStatus(`Point deleted. ${this.routePoints.length} points remaining.`);
+            }
+
+            recreateMarkersAndLines() {
+                const points = [...this.routePoints];
+                this.routePoints = [];
+                
+                // Remove existing markers
+                points.forEach(point => {
+                    if (point.marker) {
+                        this.map.removeLayer(point.marker);
+                    }
+                });
+                
+                // Recreate points with updated numbers
+                points.forEach((pointData, index) => {
+                    setTimeout(() => {
+                        this.addRoutePoint({
+                            lat: pointData.lat,
+                            lng: pointData.lng
+                        }, pointData.name);
+                        
+                        // Preserve description
+                        if (pointData.description && this.routePoints[index]) {
+                            this.routePoints[index].description = pointData.description;
+                        }
+                    }, index * 20);
+                });
+            }
+
+            closeShape() {
+                console.log('closeShape called with', this.routePoints.length, 'points');
+                if (this.routePoints.length < 3 || this.isShapeClosed) {
+                    console.log('Cannot close shape: insufficient points or already closed');
+                    return;
+                }
+
+                const firstPoint = this.routePoints[0];
+                const lastPoint = this.routePoints[this.routePoints.length - 1];
+
+                // Get current shape color
+                const colorIndex = this.shapes.length % this.shapeColors.length;
+                const shapeColor = this.shapeColors[colorIndex];
+                console.log('Closing shape with color:', shapeColor);
+
+                // Create closing line
+                this.shapeClosedLine = L.polyline([
+                    [lastPoint.lat, lastPoint.lng],
+                    [firstPoint.lat, firstPoint.lng]
+                ], {
+                    color: shapeColor, 
+                    weight: 3,
+                    className: 'shape-closed'
+                }).addTo(this.map);
+
+                this.isShapeClosed = true;
+
+                // Calculate area
+                this.calculateArea();
+
+                // Update UI
+                document.getElementById('closeShape').disabled = true;
+                document.getElementById('closeShape').textContent = '✅ Shape Closed';
+                document.getElementById('newShape').disabled = false;
+
+                this.updateShapeInfo();
+                console.log('Shape closed successfully. Area:', this.shapeArea, 'isShapeClosed:', this.isShapeClosed);
+                this.updateStatus(`🔗 Shape closed! Area: ${this.shapeArea > 1000000 ? 
+                    (this.shapeArea / 1000000).toFixed(2) + ' km²' : 
+                    this.shapeArea.toFixed(0) + ' m²'}. Click "Save Shape" or "New Shape" to save.`);
+                
+                // Refresh measurements if visible
+                if (this.measurementsVisible) {
+                    this.showMeasurements();
+                }
+            }
+
+            calculateArea() {
+                if (this.routePoints.length < 3) {
+                    this.shapeArea = 0;
+                    console.log('Cannot calculate area: insufficient points');
+                    return;
+                }
+
+                // Calculate area using the shoelace formula (for approximate area)
+                let area = 0;
+                const points = this.routePoints;
+                
+                for (let i = 0; i < points.length; i++) {
+                    const j = (i + 1) % points.length;
+                    area += points[i].lng * points[j].lat;
+                    area -= points[j].lng * points[i].lat;
+                }
+                
+                area = Math.abs(area) / 2;
+                
+                // Convert to approximate square meters (very rough approximation)
+                // This is simplified - real area calculation would need proper projection
+                const avgLat = points.reduce((sum, p) => sum + p.lat, 0) / points.length;
+                const latToMeters = 111320; // meters per degree latitude
+                const lngToMeters = 111320 * Math.cos(avgLat * Math.PI / 180); // meters per degree longitude
+                
+                this.shapeArea = Math.abs(area * latToMeters * lngToMeters);
+                
+                // Area calculation complete - no UI element to update
+                console.log('Area calculated:', this.shapeArea, 'square meters');
+            }
+
+            saveMapState() {
+                const mapState = {
+                    version: '1.0',
+                    timestamp: new Date().toISOString(),
+                    mapCenter: this.map.getCenter(),
+                    mapZoom: this.map.getZoom(),
+                    overlay: this.overlay ? {
+                        bounds: this.overlayBounds,
+                        // Note: actual image data would need to be saved separately
+                        hasOverlay: true
+                    } : null,
+                    routePoints: this.routePoints.map(point => ({
+                        id: point.id,
+                        lat: point.lat,
+                        lng: point.lng,
+                        name: point.name,
+                        description: point.description
+                    })),
+                    isShapeClosed: this.isShapeClosed,
+                    shapeArea: this.shapeArea
+                };
+
+                const dataStr = JSON.stringify(mapState, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `mapquest-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                this.updateStatus('✅ Map state saved successfully!');
+            }
+
+            loadMapState(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const mapState = JSON.parse(e.target.result);
+                        
+                        // Clear current state
+                        this.clearAll(false); // Don't show confirmation
+                        
+                        // Restore map view
+                        if (mapState.mapCenter && mapState.mapZoom) {
+                            this.map.setView([mapState.mapCenter.lat, mapState.mapCenter.lng], mapState.mapZoom);
+                        }
+                        
+                        // Restore route points
+                        if (mapState.routePoints && mapState.routePoints.length > 0) {
+                            mapState.routePoints.forEach((pointData, index) => {
+                                setTimeout(() => {
+                                    this.addRoutePoint({
+                                        lat: pointData.lat,
+                                        lng: pointData.lng
+                                    }, pointData.name);
+                                    
+                                    // Update description if it exists
+                                    if (pointData.description && this.routePoints[index]) {
+                                        this.routePoints[index].description = pointData.description;
+                                    }
+                                    
+                                    // Close shape if it was closed in saved state
+                                    if (index === mapState.routePoints.length - 1 && mapState.isShapeClosed) {
+                                        setTimeout(() => this.closeShape(), 100);
+                                    }
+                                }, index * 50); // Small delay to ensure proper order
+                            });
+                        }
+                        
+                        this.updateStatus(`✅ Map state loaded! Restored ${mapState.routePoints?.length || 0} points.`);
+                        
+                    } catch (error) {
+                        console.error('Error loading map state:', error);
+                        alert('Error loading file. Please make sure it\'s a valid MapQuest save file.');
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            testImportCoordinates() {
+                console.log('Testing coordinate import...');
+                // Clear existing points
+                this.clearCurrentShape();
+                
+                // Your coordinates
+                const testCoords = "51.501844,-0.140591/51.507790,-0.127911/51.511396,-0.124350/51.515411,-0.124831/51.518603,-0.130259/51.517915,-0.134668/51.515458,-0.141813/51.516653,-0.144913/51.517668,-0.149365/51.516927,-0.153066/51.515271,-0.156445/51.513381,-0.158022/51.507132,-0.151771";
+                
+                // Parse and add coordinates
+                const coordPairs = testCoords.split('/');
+                let count = 0;
+                
+                coordPairs.forEach((coordPair, index) => {
+                    const [latStr, lngStr] = coordPair.split(',');
+                    const lat = parseFloat(latStr);
+                    const lng = parseFloat(lngStr);
+                    
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        setTimeout(() => {
+                            this.addRoutePoint({ lat: lat, lng: lng }, `Test ${index + 1}`);
+                            console.log('Added test point', index + 1, lat, lng);
+                        }, index * 50);
+                        count++;
+                    }
+                });
+                
+                // Fit map to show all points after import
+                setTimeout(() => {
+                    if (this.routePoints.length > 0) {
+                        const group = new L.featureGroup(this.routePoints.map(p => p.marker));
+                        this.map.fitBounds(group.getBounds().pad(0.1));
+                        console.log('Map fitted, total points:', this.routePoints.length);
+                    }
+                }, count * 50 + 200);
+                
+                this.updateStatus(`🧪 Importing ${count} test coordinates...`);
+            }
+
+            renameCurrentShape() {
+                if (this.routePoints.length === 0) {
+                    this.updateStatus('No active shape to rename!');
+                    return;
+                }
+                
+                const currentName = this.currentShapeName || `Shape ${this.currentShapeId || 'New'}`;
+                const newName = prompt('Enter new name for the current shape:', currentName);
+                
+                if (newName && newName.trim()) {
+                    this.currentShapeName = newName.trim();
+                    this.updateStatus(`Shape renamed to: ${this.currentShapeName}`);
+                    this.updateShapeInfo();
+                }
+            }
+
+            saveCurrentShapeAndRefresh() {
+                if (this.routePoints.length === 0) {
+                    this.updateStatus('No points to save!');
+                    return;
+                }
+                
+                this.saveCurrentShape();
+                this.updateStatus(`✅ Shape saved! ${this.shapes.length} total shapes.`);
+                
+                // Enable new shape button
+                document.getElementById('newShape').disabled = false;
+            }
+
+            startNewShape() {
+                if (this.routePoints.length > 0 && !this.isShapeClosed) {
+                    if (!confirm('Current shape is not closed. Start new shape anyway?')) {
+                        return;
+                    }
+                }
+                
+                // Save current shape if it exists
+                if (this.routePoints.length > 0) {
+                    this.saveCurrentShape();
+                }
+                
+                // Clear current drawing
+                this.clearCurrentShape();
+                
+                // Start new shape - don't assign currentShapeId yet, let saveCurrentShape do it
+                this.currentShapeId = null;
+                this.updateStatus(`Started new shape. Click to add points.`);
+                this.updateShapeInfo();
+            }
+
+            saveCurrentShape() {
+                console.log('saveCurrentShape called with', this.routePoints.length, 'points');
+                if (this.routePoints.length === 0) {
+                    console.log('No points to save');
+                    return;
+                }
+                
+                // Ensure area is calculated
+                if (this.routePoints.length >= 3 && this.isShapeClosed) {
+                    this.calculateArea();
+                } else {
+                    this.shapeArea = 0; // Open shapes or insufficient points
+                }
+                
+                const shapeColor = this.shapeColors[(this.shapes.length) % this.shapeColors.length];
+                
+                // Determine if we're creating a new shape or updating existing one
+                // If currentShapeId exists and we have an existing shape with that ID, update it
+                // Otherwise, create a new shape with next available ID
+                let shapeId;
+                let isUpdating = false;
+                
+                console.log('saveCurrentShape - currentShapeId:', this.currentShapeId);
+                console.log('saveCurrentShape - existing shapes:', this.shapes.map(s => `ID:${s.id} Name:${s.name}`));
+                
+                if (this.currentShapeId && this.shapes.find(s => s.id === this.currentShapeId)) {
+                    // We're updating an existing shape
+                    shapeId = this.currentShapeId;
+                    isUpdating = true;
+                    console.log('saveCurrentShape - UPDATING existing shape with ID:', shapeId);
+                } else {
+                    // We're creating a new shape
+                    shapeId = this.nextShapeId++;
+                    isUpdating = false;
+                    console.log('saveCurrentShape - CREATING new shape with ID:', shapeId, 'nextShapeId now:', this.nextShapeId);
+                }
+                
+                const defaultName = `Shape ${shapeId}`;
+                const customName = this.pendingShapeName || this.currentShapeName || defaultName;
+                
+                const shape = {
+                    id: shapeId,
+                    name: customName,
+                    points: this.routePoints.map(p => ({
+                        lat: p.lat,
+                        lng: p.lng,
+                        name: p.name,
+                        description: p.description
+                    })),
+                    isClosed: this.isShapeClosed,
+                    area: this.shapeArea || 0,
+                    color: shapeColor,
+                    score: 0,
+                    notes: '',
+                    created: new Date().toISOString(),
+                    visible: true,
+                    // Store references to visual elements for show/hide functionality
+                    markers: [...this.routePoints.map(p => p.marker)],
+                    lines: [...this.routeLines],
+                    closingLine: this.shapeClosedLine
+                };
+                
+                if (isUpdating) {
+                    const existingIndex = this.shapes.findIndex(s => s.id === shape.id);
+                    console.log('Updating existing shape at index:', existingIndex, 'ID:', shape.id, 'Name:', shape.name);
+                    this.shapes[existingIndex] = shape;
+                } else {
+                    console.log('Adding new shape ID:', shape.id, 'Name:', shape.name, 'Total shapes will be:', this.shapes.length + 1);
+                    this.shapes.push(shape);
+                    // Update currentShapeId to the new shape
+                    this.currentShapeId = shapeId;
+                }
+                
+                console.log('After save - all shapes:', this.shapes.map(s => `ID:${s.id} Name:${s.name}`));
+                console.log('After save - currentShapeId:', this.currentShapeId);
+                
+                this.updateShapeCounter();
+                
+                // Update the shapes list in the management panel if it's open
+                if (document.getElementById('shapesPanel').style.display === 'block') {
+                    console.log('Updating shapes panel');
+                    this.updateShapesList();
+                }
+                
+                // Clear pending names after saving
+                this.pendingShapeName = null;
+                this.currentShapeName = null;
+                
+                console.log('Shape saved. Total shapes:', this.shapes.length);
+                
+                // Refresh measurements if visible
+                if (this.measurementsVisible) {
+                    this.showMeasurements();
+                }
+            }
+
+            clearCurrentShape() {
+                // Clear route points
+                this.routePoints.forEach(point => {
+                    if (point.marker) {
+                        this.map.removeLayer(point.marker);
+                    }
+                });
+                this.routePoints = [];
+
+                // Clear route lines
+                this.routeLines.forEach(line => {
+                    this.map.removeLayer(line);
+                });
+                this.routeLines = [];
+
+                // Clear shape closing line
+                if (this.shapeClosedLine) {
+                    this.map.removeLayer(this.shapeClosedLine);
+                    this.shapeClosedLine = null;
+                }
+
+                // Reset shape variables
+                this.isShapeClosed = false;
+                this.shapeArea = 0;
+                this.currentShapeId = null;
+
+                // Reset UI
+                document.getElementById('closeShape').disabled = true;
+                document.getElementById('closeShape').textContent = '🔗 Close';
+                document.getElementById('saveCurrentShape').disabled = true;
+                // document.getElementById('renameShape')?.disabled = true; // Button removed
+                document.getElementById('newShape').disabled = true;
+                
+                this.updatePointCounter();
+                this.updateShapeInfo();
+            }
+
+            showShapesPanel() {
+                document.getElementById('shapesPanel').style.display = 'block';
+                // Always refresh the list when opening the panel
+                this.updateShapesList();
+                this.updateProjectStats();
+            }
+
+            hideShapesPanel() {
+                document.getElementById('shapesPanel').style.display = 'none';
+            }
+
+            hideOverlayPanel() {
+                document.getElementById('overlayPanel').style.display = 'none';
+            }
+
+            updateShapesList() {
+                console.log('updateShapesList called, shapes:', this.shapes.length);
+                const listDiv = document.getElementById('shapesList');
+                
+                if (!listDiv) {
+                    console.error('shapesList element not found');
+                    return;
+                }
+                
+                if (this.shapes.length === 0) {
+                    listDiv.innerHTML = `
+                        <div style="text-align: center; color: #999; padding: 20px;">
+                            No shapes created yet.<br>
+                            Start drawing to create your first shape!
+                        </div>
+                    `;
+                    return;
+                }
+                
+                listDiv.innerHTML = '';
+                console.log('Processing', this.shapes.length, 'shapes');
+                
+                this.shapes.forEach((shape, index) => {
+                    try {
+                        console.log('Processing shape:', shape.id, shape.name);
+                        const div = document.createElement('div');
+                        div.className = `shape-item ${shape.id === this.currentShapeId ? 'active' : ''}`;
+                        
+                        // Ensure shape has required properties
+                        if (!shape.area) shape.area = 0;
+                        if (shape.score === undefined || shape.score === null) shape.score = 0;
+                        if (!shape.name) shape.name = `Shape ${shape.id || index + 1}`;
+                        if (!shape.color) shape.color = '#e74c3c';
+                        if (!shape.points) shape.points = [];
+                        if (!shape.created) shape.created = new Date().toISOString();
+                        
+                        const areaText = shape.area > 1000000 ? 
+                            `${(shape.area / 1000000).toFixed(2)} km²` : 
+                            `${shape.area.toFixed(0)} m²`;
+                        
+                        // Calculate distance for this shape
+                        const distance = this.calculateShapeDistance(shape.points, shape.isClosed);
+                        const distanceText = distance > 0 ? `${distance.toFixed(2)} km` : '0 km';
+                    
+                    div.innerHTML = `
+                        <div class="shape-header">
+                            <input type="text" class="shape-name-input" value="${shape.name}" 
+                                   onchange="mapQuest.updateShapeName(${shape.id}, this.value)"
+                                   style="color: ${shape.color}; font-weight: bold; border: 1px solid #ddd; padding: 2px 4px; background: #f9f9f9; border-radius: 3px;">
+                            <span class="shape-score" style="background: #3498db; color: white; padding: 2px 6px; border-radius: 3px;">Score: ${shape.score}</span>
+                        </div>
+                        <div class="shape-info">
+                            Points: ${shape.points.length} | Area: ${areaText} | Distance: ${distanceText}
+                        </div>
+                        <div class="shape-info">
+                            ${shape.isClosed ? '🔗 Closed Shape' : '📍 Open Path'} | Complexity: ${this.calculateComplexityScore(shape)} pts | Created: ${new Date(shape.created).toLocaleDateString()}
+                        </div>
+                        <div class="shape-controls">
+                            <button class="shape-btn view" onclick="mapQuest.viewShape(${shape.id})">👁️ View</button>
+                            <button class="shape-btn edit" onclick="mapQuest.editShape(${shape.id})">✏️ Edit</button>
+                            <button class="shape-btn ${shape.visible !== false ? 'hide' : 'show'}" 
+                                    onclick="mapQuest.toggleShapeVisibility(${shape.id})">
+                                ${shape.visible !== false ? '🙈 Hide' : '👁️ Show'}
+                            </button>
+                            <input type="number" class="score-input" value="${shape.score}" 
+                                   onchange="mapQuest.updateShapeScore(${shape.id}, this.value)" 
+                                   placeholder="Manual Score" title="Manual score override">
+                            <button class="shape-btn" onclick="mapQuest.autoScoreShape(${shape.id})" 
+                                    style="background: #9b59b6; color: white;" title="Set score to calculated complexity">🧮 Auto</button>
+                            <button class="shape-btn delete" onclick="mapQuest.deleteShape(${shape.id})">🗑️ Delete</button>
+                        </div>
+                    `;
+                    
+                    listDiv.appendChild(div);
+                    } catch (error) {
+                        console.error('Error processing shape:', shape, error);
+                        // Still create a basic entry for broken shapes
+                        const div = document.createElement('div');
+                        div.innerHTML = `<div style="color: #e74c3c; padding: 10px;">Error displaying shape ${shape.id || index}</div>`;
+                        listDiv.appendChild(div);
+                    }
+                });
+            }
+
+            viewShape(shapeId) {
+                const shape = this.shapes.find(s => s.id === shapeId);
+                if (!shape) return;
+                
+                // Create bounds from shape points
+                if (shape.points.length > 0) {
+                    const bounds = L.latLngBounds(shape.points.map(p => [p.lat, p.lng]));
+                    this.map.fitBounds(bounds.pad(0.1));
+                }
+                
+                this.updateStatus(`Viewing ${shape.name} - ${shape.points.length} points, Score: ${shape.score}`);
+            }
+
+            editShape(shapeId) {
+                const shape = this.shapes.find(s => s.id === shapeId);
+                if (!shape) return;
+                
+                // Save current shape if exists
+                if (this.routePoints.length > 0) {
+                    this.saveCurrentShape();
+                }
+                
+                // Clear current
+                this.clearCurrentShape();
+                
+                // Load shape for editing
+                this.currentShapeId = shapeId;
+                
+                // Recreate points and lines
+                shape.points.forEach((pointData, index) => {
+                    setTimeout(() => {
+                        this.addRoutePoint({
+                            lat: pointData.lat,
+                            lng: pointData.lng
+                        }, pointData.name);
+                        
+                        // Update description
+                        if (pointData.description && this.routePoints[index]) {
+                            this.routePoints[index].description = pointData.description;
+                        }
+                        
+                        // Close shape if it was closed
+                        if (index === shape.points.length - 1 && shape.isClosed) {
+                            setTimeout(() => this.closeShape(), 100);
+                        }
+                    }, index * 50);
+                });
+                
+                // Focus on shape
+                setTimeout(() => this.viewShape(shapeId), shape.points.length * 50 + 200);
+                
+                this.updateStatus(`Editing ${shape.name}. Make changes and click "New Shape" to save.`);
+            }
+
+            deleteShape(shapeId) {
+                const shape = this.shapes.find(s => s.id === shapeId);
+                if (!shape) return;
+                
+                if (!confirm(`Delete ${shape.name}? This cannot be undone.`)) {
+                    return;
+                }
+                
+                this.shapes = this.shapes.filter(s => s.id !== shapeId);
+                
+                // If deleting current shape, clear it
+                if (this.currentShapeId === shapeId) {
+                    this.clearCurrentShape();
+                }
+                
+                this.updateShapesList();
+                this.updateProjectStats();
+                this.updateShapeCounter();
+                this.updateStatus(`${shape.name} deleted.`);
+            }
+
+            updateShapeName(shapeId, newName) {
+                const shape = this.shapes.find(s => s.id === shapeId);
+                if (shape && newName.trim()) {
+                    const oldName = shape.name;
+                    shape.name = newName.trim();
+                    this.updateStatus(`Renamed "${oldName}" to "${shape.name}"`);
+                }
+            }
+
+            autoScoreShape(shapeId) {
+                const shape = this.shapes.find(s => s.id === shapeId);
+                if (!shape) return;
+                
+                const complexityScore = this.calculateComplexityScore(shape);
+                shape.score = complexityScore;
+                this.updateShapesList();
+                this.updateProjectStats();
+                this.updateStatus(`${shape.name} auto-scored to ${complexityScore} (complexity-based)`);
+            }
+
+            updateShapeScore(shapeId, score) {
+                const shape = this.shapes.find(s => s.id === shapeId);
+                if (!shape) return;
+                
+                shape.score = parseFloat(score) || 0;
+                this.updateShapesList();
+                this.updateProjectStats();
+                this.updateStatus(`${shape.name} score updated to ${shape.score}`);
+            }
+
+            calculateComplexityScore(shape) {
+                // Automatic scoring based on complexity factors
+                let score = 0;
+                
+                // Points score: More points = more complex (1 point per route point)
+                score += shape.points.length;
+                
+                // Distance score: Longer routes = more complex (1 point per km, rounded)
+                const distance = this.calculateShapeDistance(shape.points, shape.isClosed);
+                score += Math.round(distance);
+                
+                // Area score: Larger areas = more complex (1 point per 100,000 m²)
+                if (shape.isClosed && shape.area > 0) {
+                    score += Math.round(shape.area / 100000);
+                }
+                
+                // Closure bonus: Closed shapes get 5 extra points
+                if (shape.isClosed) {
+                    score += 5;
+                }
+                
+                return Math.max(score, 1); // Minimum score of 1
+            }
+
+            // Overlay Management Methods
+            showOverlayPanel() {
+                document.getElementById('overlayPanel').style.display = 'block';
+                this.updateOverlaysList();
+                this.updateOverlayStats();
+            }
+
+            updateOverlaysList() {
+                const listDiv = document.getElementById('overlaysList');
+                
+                if (!listDiv) {
+                    console.error('overlaysList element not found');
+                    return;
+                }
+                
+                if (this.overlays.length === 0) {
+                    listDiv.innerHTML = `
+                        <div style="text-align: center; color: #999; padding: 20px;">
+                            No overlays loaded yet.<br>
+                            Use "Add Overlay" to load your first overlay!
+                        </div>
+                    `;
+                    return;
+                }
+                
+                listDiv.innerHTML = '';
+                
+                this.overlays.forEach((overlay, index) => {
+                    const div = document.createElement('div');
+                    div.className = `overlay-item ${overlay.id === this.activeOverlayId ? 'active' : ''}`;
+                    
+                    const sizeText = overlay.width && overlay.height ? `${overlay.width}×${overlay.height}` : 'Unknown';
+                    
+                    div.innerHTML = `
+                        <div class="overlay-header">
+                            <input type="text" class="overlay-name-input" value="${overlay.name}" 
+                                   onchange="mapQuest.updateOverlayName(${overlay.id}, this.value)"
+                                   style="font-weight: bold; border: 1px solid #ddd; padding: 2px 4px; background: #f9f9f9; border-radius: 3px;">
+                            <span class="overlay-status ${overlay.visible ? 'visible' : 'hidden'}">${overlay.visible ? '👁️ Visible' : '🚫 Hidden'}</span>
+                        </div>
+                        <div class="overlay-info">
+                            <small>
+                                Size: ${sizeText} | Opacity: ${Math.round(overlay.opacity * 100)}%<br>
+                                Position: ${overlay.bounds._southWest.lat.toFixed(5)}, ${overlay.bounds._southWest.lng.toFixed(5)}
+                            </small>
+                        </div>
+                        <div class="overlay-controls" style="margin-top: 10px;">
+                            <button onclick="mapQuest.setActiveOverlay(${overlay.id})" class="btn ${overlay.id === this.activeOverlayId ? 'btn-success' : 'btn-secondary'}" style="padding: 2px 8px;">
+                                ${overlay.id === this.activeOverlayId ? '✓ Active' : 'Make Active'}
+                            </button>
+                            <button onclick="mapQuest.toggleOverlayVisibility(${overlay.id})" class="btn btn-secondary" style="padding: 2px 8px;">
+                                ${overlay.visible ? '🙈 Hide' : '👁️ Show'}
+                            </button>
+                            <button onclick="mapQuest.centerOnOverlay(${overlay.id})" class="btn btn-secondary" style="padding: 2px 8px;">
+                                📍 Center
+                            </button>
+                            <button onclick="mapQuest.deleteOverlay(${overlay.id})" class="btn btn-danger" style="padding: 2px 8px;">
+                                🗑️ Delete
+                            </button>
+                        </div>
+                    `;
+                    
+                    listDiv.appendChild(div);
+                });
+                
+                this.updateOverlayStats();
+            }
+
+            updateOverlayStats() {
+                const statsElement = document.getElementById('overlayStats');
+                if (!statsElement) return; // Safety check
+                
+                const totalOverlays = this.overlays.length;
+                const visibleOverlays = this.overlays.filter(o => o.visible).length;
+                const activeOverlay = this.overlays.find(o => o.id === this.activeOverlayId);
+                const activeName = activeOverlay ? activeOverlay.name : 'None';
+                
+                statsElement.innerHTML = `
+                    Total Overlays: ${totalOverlays} | Visible: ${visibleOverlays} | Active: ${activeName}
+                `;
+            }
+
+            setActiveOverlay(overlayId) {
+                this.activeOverlayId = overlayId;
+                const activeOverlay = this.overlays.find(o => o.id === overlayId);
+                if (activeOverlay) {
+                    // Update opacity slider to match active overlay
+                    const opacitySlider = document.getElementById('opacitySlider');
+                    if (opacitySlider) {
+                        opacitySlider.value = activeOverlay.opacity * 100;
+                        document.getElementById('opacityValue').textContent = Math.round(activeOverlay.opacity * 100) + '%';
+                    }
+                    this.updateOverlaysList();
+                    this.updateOverlayStats();
+                    this.updateStatus(`Switched to overlay: ${activeOverlay.name}`);
+                }
+            }
+
+            toggleOverlayVisibility(overlayId) {
+                const overlay = this.overlays.find(o => o.id === overlayId);
+                if (overlay) {
+                    overlay.visible = !overlay.visible;
+                    if (overlay.visible) {
+                        this.map.addLayer(overlay.leafletLayer);
+                    } else {
+                        this.map.removeLayer(overlay.leafletLayer);
+                    }
+                    this.updateOverlaysList();
+                    this.updateOverlayStats();
+                    this.updateStatus(`Overlay "${overlay.name}" ${overlay.visible ? 'shown' : 'hidden'}`);
+                }
+            }
+
+            centerOnOverlay(overlayId) {
+                const overlay = this.overlays.find(o => o.id === overlayId);
+                if (overlay && overlay.bounds) {
+                    this.map.fitBounds(overlay.bounds);
+                    this.updateStatus(`Centered on overlay: ${overlay.name}`);
+                }
+            }
+
+            updateOverlayName(overlayId, newName) {
+                const overlay = this.overlays.find(o => o.id === overlayId);
+                if (overlay && newName.trim()) {
+                    const oldName = overlay.name;
+                    overlay.name = newName.trim();
+                    this.updateStatus(`Renamed overlay "${oldName}" to "${overlay.name}"`);
+                }
+            }
+
+            deleteOverlay(overlayId) {
+                const overlay = this.overlays.find(o => o.id === overlayId);
+                if (!overlay) return;
+                
+                if (confirm(`Are you sure you want to delete overlay "${overlay.name}"?`)) {
+                    // Remove from map
+                    if (overlay.leafletLayer && this.map.hasLayer(overlay.leafletLayer)) {
+                        this.map.removeLayer(overlay.leafletLayer);
+                    }
+                    
+                    // Remove from overlays array
+                    this.overlays = this.overlays.filter(o => o.id !== overlayId);
+                    
+                    // Update active overlay if this was the active one
+                    if (this.activeOverlayId === overlayId) {
+                        this.activeOverlayId = this.overlays.length > 0 ? this.overlays[0].id : null;
+                        if (this.activeOverlayId) {
+                            this.setActiveOverlay(this.activeOverlayId);
+                        }
+                    }
+                    
+                    this.updateOverlaysList();
+                    this.updateOverlayStats();
+                    this.updateStatus(`Overlay "${overlay.name}" deleted`);
+                }
+            }
+
+            updateProjectStats() {
+                const totalShapes = this.shapes.length;
+                
+                // Calculate total distance and complexity scores
+                let totalDistance = 0;
+                let totalComplexityScore = 0;
+                
+                this.shapes.forEach(shape => {
+                    totalDistance += this.calculateShapeDistance(shape.points, shape.isClosed);
+                    totalComplexityScore += this.calculateComplexityScore(shape);
+                });
+                
+                const avgScore = totalShapes > 0 ? 
+                    (this.shapes.reduce((sum, s) => sum + s.score, 0) / totalShapes).toFixed(1) : 0;
+                const avgComplexity = totalShapes > 0 ? (totalComplexityScore / totalShapes).toFixed(1) : 0;
+                const totalArea = this.shapes.reduce((sum, s) => sum + s.area, 0);
+                
+                const areaText = totalArea > 1000000 ? 
+                    `${(totalArea / 1000000).toFixed(2)} km²` : 
+                    `${totalArea.toFixed(0)} m²`;
+                
+                document.getElementById('projectStats').innerHTML = `
+                    <strong>Project Statistics:</strong><br>
+                    <small>
+                        Shapes: ${totalShapes} | Avg Manual Score: ${avgScore} | Avg Complexity: ${avgComplexity}<br>
+                        Total Distance: ${totalDistance.toFixed(2)} km | Total Area: ${areaText}
+                    </small>
+                `;
+            }
+
+            exportScoresToCSV() {
+                if (this.shapes.length === 0) {
+                    alert('No shapes to export!');
+                    return;
+                }
+                
+                const headers = ['Shape Name', 'Points', 'Distance (km)', 'Area (m²)', 'Area (km²)', 'Manual Score', 'Complexity Score', 'Status', 'Created'];
+                const rows = this.shapes.map(shape => [
+                    shape.name,
+                    shape.points.length,
+                    this.calculateShapeDistance(shape.points, shape.isClosed).toFixed(3),
+                    shape.area.toFixed(2),
+                    (shape.area / 1000000).toFixed(6),
+                    shape.score,
+                    this.calculateComplexityScore(shape),
+                    shape.isClosed ? 'Closed' : 'Open',
+                    new Date(shape.created).toLocaleDateString()
+                ]);
+                
+                const csvContent = [headers, ...rows]
+                    .map(row => row.map(field => `"${field}"`).join(','))
+                    .join('\n');
+                
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `mapquest-scores-${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                this.updateStatus('✅ Scores exported to CSV successfully!');
+            }
+
+            saveProject() {
+                // Save current shape before saving project
+                if (this.routePoints.length > 0) {
+                    this.saveCurrentShape();
+                }
+                
+                // Clean shapes for JSON serialization (remove Leaflet objects)
+                const cleanedShapes = this.shapes.map(shape => ({
+                    id: shape.id,
+                    name: shape.name,
+                    points: shape.points,
+                    isClosed: shape.isClosed,
+                    area: shape.area || 0,
+                    color: shape.color,
+                    score: shape.score || 0,
+                    notes: shape.notes || '',
+                    created: shape.created,
+                    visible: shape.visible !== false
+                    // Exclude markers, lines, closingLine as they can't be serialized
+                }));
+
+                // Clean overlays for JSON serialization (remove Leaflet objects)
+                const cleanedOverlays = this.overlays.map(overlay => ({
+                    id: overlay.id,
+                    name: overlay.name,
+                    bounds: {
+                        _southWest: overlay.bounds._southWest,
+                        _northEast: overlay.bounds._northEast
+                    },
+                    dataUrl: overlay.dataUrl,
+                    opacity: overlay.opacity,
+                    width: overlay.width,
+                    height: overlay.height,
+                    visible: overlay.visible !== false
+                    // Exclude leafletLayer as it can't be serialized
+                }));
+
+                const project = {
+                    version: '3.0',
+                    type: 'mapquest-project-multi-overlay',
+                    timestamp: new Date().toISOString(),
+                    mapCenter: this.map.getCenter(),
+                    mapZoom: this.map.getZoom(),
+                    overlays: cleanedOverlays,
+                    activeOverlayId: this.activeOverlayId,
+                    nextOverlayId: this.nextOverlayId,
+                    shapes: cleanedShapes,
+                    currentShapeId: this.currentShapeId,
+                    nextShapeId: this.nextShapeId
+                };
+                
+                const dataStr = JSON.stringify(project, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `mapquest-project-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                this.updateStatus('✅ Project saved successfully!');
+            }
+
+            loadProject(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const project = JSON.parse(e.target.result);
+                        
+                        // Clear current state
+                        this.clearAll(false);
+                        
+                        // Restore project data
+                        this.shapes = project.shapes || [];
+                        this.currentShapeId = null; // Reset - we're not editing any shape when loading
+                        this.nextShapeId = project.nextShapeId || 1;
+                        
+                        console.log('Loading project - shapes found:', this.shapes.length);
+                        this.shapes.forEach((shape, index) => {
+                            console.log(`Shape ${index + 1}:`, shape.name, 'Points:', shape.points.length);
+                        });
+                        
+                        // Restore map view
+                        if (project.mapCenter && project.mapZoom) {
+                            this.map.setView([project.mapCenter.lat, project.mapCenter.lng], project.mapZoom);
+                        }
+                        
+                        // Handle both old single overlay format and new multi-overlay format
+                        if (project.overlays && Array.isArray(project.overlays)) {
+                            // New multi-overlay format (version 3.0+)
+                            this.overlays = [];
+                            this.activeOverlayId = project.activeOverlayId || null;
+                            this.nextOverlayId = project.nextOverlayId || 1;
+                            
+                            project.overlays.forEach(overlayData => {
+                                const bounds = [
+                                    [overlayData.bounds._southWest.lat, overlayData.bounds._southWest.lng],
+                                    [overlayData.bounds._northEast.lat, overlayData.bounds._northEast.lng]
+                                ];
+                                const leafletLayer = L.imageOverlay(overlayData.dataUrl, bounds);
+                                leafletLayer.setOpacity(overlayData.opacity || 1);
+                                
+                                const overlay = {
+                                    id: overlayData.id,
+                                    name: overlayData.name,
+                                    bounds: L.latLngBounds(bounds),
+                                    dataUrl: overlayData.dataUrl,
+                                    opacity: overlayData.opacity || 1,
+                                    width: overlayData.width,
+                                    height: overlayData.height,
+                                    visible: overlayData.visible !== false,
+                                    leafletLayer: leafletLayer
+                                };
+                                
+                                this.overlays.push(overlay);
+                                
+                                // Add to map if visible
+                                if (overlay.visible) {
+                                    this.map.addLayer(leafletLayer);
+                                }
+                            });
+                            
+                            // Set active overlay opacity in slider
+                            if (this.activeOverlayId) {
+                                const activeOverlay = this.overlays.find(o => o.id === this.activeOverlayId);
+                                if (activeOverlay) {
+                                    document.getElementById('opacitySlider').value = activeOverlay.opacity * 100;
+                                    document.getElementById('opacityValue').textContent = Math.round(activeOverlay.opacity * 100) + '%';
+                                }
+                            }
+                            
+                            document.getElementById('editOverlay').disabled = this.overlays.length === 0;
+                            document.getElementById('opacitySlider').disabled = this.overlays.length === 0;
+                            
+                        } else if (project.overlay && project.overlay.dataUrl) {
+                            // Legacy single overlay format (version 2.0 and below)
+                            const bounds = [
+                                [project.overlay.bounds._southWest.lat, project.overlay.bounds._southWest.lng],
+                                [project.overlay.bounds._northEast.lat, project.overlay.bounds._northEast.lng]
+                            ];
+                            const leafletLayer = L.imageOverlay(project.overlay.dataUrl, bounds).addTo(this.map);
+                            leafletLayer.setOpacity(project.overlay.opacity || 1);
+                            
+                            // Convert to new multi-overlay format
+                            this.overlays = [{
+                                id: 1,
+                                name: "Imported Overlay",
+                                bounds: L.latLngBounds(bounds),
+                                dataUrl: project.overlay.dataUrl,
+                                opacity: project.overlay.opacity || 1,
+                                width: null,
+                                height: null,
+                                visible: true,
+                                leafletLayer: leafletLayer
+                            }];
+                            this.activeOverlayId = 1;
+                            this.nextOverlayId = 2;
+                            
+                            document.getElementById('opacitySlider').value = (project.overlay.opacity || 1) * 100;
+                            document.getElementById('opacityValue').textContent = Math.round((project.overlay.opacity || 1) * 100) + '%';
+                            document.getElementById('editOverlay').disabled = false;
+                            document.getElementById('opacitySlider').disabled = false;
+                        }
+                        
+                        // Recreate visual elements for all loaded shapes
+                        console.log('Recreating visuals for', this.shapes.length, 'shapes');
+                        this.shapes.forEach((shape, index) => {
+                            console.log(`Creating visuals for shape ${index + 1}:`, shape.name);
+                            this.createShapeVisuals(shape);
+                            // Show shape if it was marked as visible
+                            if (shape.visible !== false) {
+                                console.log(`Showing shape ${shape.name}`);
+                                this.showShape(shape.id);
+                            }
+                        });
+
+                        // Update UI
+                        this.updateShapeCounter();
+                        this.updateShapeInfo();
+                        this.updateProjectStats();
+                        
+                        this.updateStatus(`✅ Project loaded! Restored ${this.shapes.length} shapes and ${this.overlays.length} overlays.`);
+                        
+                        // Also update the shape management panel if it's open
+                        if (document.getElementById('shapesPanel').style.display === 'block') {
+                            this.updateShapesList();
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error loading project:', error);
+                        alert('Error loading project file. Please make sure it\'s a valid MapQuest project file.');
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            showAllShapes() {
+                console.log('showAllShapes called, shapes:', this.shapes.length);
+                this.shapes.forEach(shape => {
+                    console.log('Showing shape:', shape.id);
+                    this.showShape(shape.id);
+                });
+                this.updateStatus('✅ All shapes are now visible');
+                
+                // Refresh measurements if visible
+                if (this.measurementsVisible) {
+                    this.showMeasurements();
+                }
+            }
+
+            hideAllShapes() {
+                console.log('hideAllShapes called, shapes:', this.shapes.length);
+                this.shapes.forEach(shape => {
+                    console.log('Hiding shape:', shape.id);
+                    this.hideShape(shape.id);
+                });
+                this.updateStatus('🙈 All shapes are now hidden');
+                
+                // Refresh measurements if visible
+                if (this.measurementsVisible) {
+                    this.showMeasurements();
+                }
+            }
+
+            toggleMeasurements() {
+                this.measurementsVisible = !this.measurementsVisible;
+                const btn = document.getElementById('toggleMeasurements');
+                
+                if (this.measurementsVisible) {
+                    btn.textContent = '📏 Hide Measurements';
+                    btn.style.background = '#e67e22';
+                    this.showMeasurements();
+                    this.updateStatus('📏 Measurements displayed');
+                } else {
+                    btn.textContent = '📏 Show Measurements';
+                    btn.style.background = '#9b59b6';
+                    this.hideMeasurements();
+                    this.updateStatus('📏 Measurements hidden');
+                }
+            }
+
+            updateMeasurementTextSize(size) {
+                this.measurementTextSize = parseInt(size);
+                document.getElementById('textSizeValue').textContent = size + 'px';
+                
+                // Refresh measurements if visible
+                if (this.measurementsVisible) {
+                    this.showMeasurements();
+                }
+            }
+
+            showMeasurements() {
+                this.hideMeasurements(); // Clear existing measurements first
+                
+                // Show distance measurements between points for current route
+                if (this.routePoints.length > 1) {
+                    this.addDistanceMeasurements(this.routePoints, '#e74c3c', this.isShapeClosed);
+                }
+                
+                // Show measurements for all saved shapes
+                this.shapes.forEach(shape => {
+                    if (shape.visible !== false && shape.points.length > 0) {
+                        // Add distance measurements between points
+                        if (shape.points.length > 1) {
+                            this.addDistanceMeasurements(shape.points, shape.color || '#3498db', shape.isClosed);
+                        }
+                        
+                        // Add area measurement for closed shapes
+                        if (shape.isClosed && shape.area > 0) {
+                            this.addAreaMeasurement(shape);
+                        }
+                    }
+                });
+            }
+
+            hideMeasurements() {
+                // Remove all measurement labels from map
+                this.measurementLabels.forEach(label => {
+                    if (this.map.hasLayer(label)) {
+                        this.map.removeLayer(label);
+                    }
+                });
+                this.measurementLabels = [];
+            }
+
+            addDistanceMeasurements(points, color = '#e74c3c', isClosed = false) {
+                // Add measurements between consecutive points
+                for (let i = 1; i < points.length; i++) {
+                    const point1 = points[i - 1];
+                    const point2 = points[i];
+                    
+                    // Calculate distance between points
+                    const distance = this.calculatePointDistance(point1, point2);
+                    const distanceText = distance > 1 ? `${distance.toFixed(2)} km` : `${(distance * 1000).toFixed(0)} m`;
+                    
+                    // Calculate midpoint for label placement
+                    const midLat = (point1.lat + point2.lat) / 2;
+                    const midLng = (point1.lng + point2.lng) / 2;
+                    
+                    // Create distance label
+                    const measurementLabel = L.marker([midLat, midLng], {
+                        icon: L.divIcon({
+                            className: 'measurement-label',
+                            html: `<div style="
+                                background: rgba(255, 255, 255, 0.9);
+                                border: 2px solid ${color};
+                                border-radius: 4px;
+                                padding: 2px 6px;
+                                font-size: ${this.measurementTextSize}px;
+                                font-weight: bold;
+                                color: ${color};
+                                white-space: nowrap;
+                                box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+                            ">${distanceText}</div>`,
+                            iconSize: [0, 0],
+                            iconAnchor: [0, 0]
+                        }),
+                        interactive: false
+                    });
+                    
+                    measurementLabel.addTo(this.map);
+                    this.measurementLabels.push(measurementLabel);
+                }
+                
+                // Add closing distance for closed shapes (last point back to first point)
+                if (isClosed && points.length > 2) {
+                    const lastPoint = points[points.length - 1];
+                    const firstPoint = points[0];
+                    
+                    // Calculate closing distance
+                    const closingDistance = this.calculatePointDistance(lastPoint, firstPoint);
+                    const closingDistanceText = closingDistance > 1 ? 
+                        `${closingDistance.toFixed(2)} km` : 
+                        `${(closingDistance * 1000).toFixed(0)} m`;
+                    
+                    // Calculate midpoint for closing label placement
+                    const midLat = (lastPoint.lat + firstPoint.lat) / 2;
+                    const midLng = (lastPoint.lng + firstPoint.lng) / 2;
+                    
+                    // Create closing distance label with different style to indicate it's the closing segment
+                    const closingLabel = L.marker([midLat, midLng], {
+                        icon: L.divIcon({
+                            className: 'measurement-label-closing',
+                            html: `<div style="
+                                background: rgba(255, 255, 255, 0.95);
+                                border: 2px dashed ${color};
+                                border-radius: 4px;
+                                padding: 2px 6px;
+                                font-size: ${this.measurementTextSize}px;
+                                font-weight: bold;
+                                color: ${color};
+                                white-space: nowrap;
+                                box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+                            ">🔄 ${closingDistanceText}</div>`,
+                            iconSize: [0, 0],
+                            iconAnchor: [0, 0]
+                        }),
+                        interactive: false
+                    });
+                    
+                    closingLabel.addTo(this.map);
+                    this.measurementLabels.push(closingLabel);
+                }
+            }
+
+            addAreaMeasurement(shape) {
+                if (!shape.points || shape.points.length < 3) return;
+                
+                // Calculate centroid of shape for label placement
+                const centroid = this.calculateCentroid(shape.points);
+                const areaText = shape.area > 1000000 ? 
+                    `${(shape.area / 1000000).toFixed(2)} km²` : 
+                    `${shape.area.toFixed(0)} m²`;
+                
+                // Create area label (slightly larger than distance labels)
+                const areaLabel = L.marker([centroid.lat, centroid.lng], {
+                    icon: L.divIcon({
+                        className: 'area-label',
+                        html: `<div style="
+                            background: rgba(255, 255, 255, 0.95);
+                            border: 2px solid ${shape.color || '#3498db'};
+                            border-radius: 6px;
+                            padding: 4px 8px;
+                            font-size: ${this.measurementTextSize + 1}px;
+                            font-weight: bold;
+                            color: ${shape.color || '#3498db'};
+                            white-space: nowrap;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                        ">📐 ${areaText}</div>`,
+                        iconSize: [0, 0],
+                        iconAnchor: [0, 0]
+                    }),
+                    interactive: false
+                });
+                
+                areaLabel.addTo(this.map);
+                this.measurementLabels.push(areaLabel);
+            }
+
+            calculatePointDistance(point1, point2) {
+                const R = 6371; // Earth's radius in kilometers
+                const dLat = (point2.lat - point1.lat) * Math.PI / 180;
+                const dLng = (point2.lng - point1.lng) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                        Math.cos(point1.lat * Math.PI / 180) * Math.cos(point2.lat * Math.PI / 180) *
+                        Math.sin(dLng/2) * Math.sin(dLng/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return R * c;
+            }
+
+            calculateCentroid(points) {
+                let latSum = 0;
+                let lngSum = 0;
+                
+                points.forEach(point => {
+                    latSum += point.lat;
+                    lngSum += point.lng;
+                });
+                
+                return {
+                    lat: latSum / points.length,
+                    lng: lngSum / points.length
+                };
+            }
+
+            calculateShapeDistance(points, isClosed = false) {
+                if (!points || points.length < 2) return 0;
+                
+                let totalDistance = 0;
+                for (let i = 1; i < points.length; i++) {
+                    const lat1 = points[i-1].lat;
+                    const lng1 = points[i-1].lng;
+                    const lat2 = points[i].lat;
+                    const lng2 = points[i].lng;
+                    
+                    // Calculate straight-line distance using Haversine formula
+                    const R = 6371; // Earth's radius in kilometers
+                    const dLat = (lat2 - lat1) * Math.PI / 180;
+                    const dLng = (lng2 - lng1) * Math.PI / 180;
+                    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                            Math.sin(dLng/2) * Math.sin(dLng/2);
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                    const distance = R * c;
+                    
+                    totalDistance += distance;
+                }
+                
+                // Add closing distance for closed shapes (last point back to first point)
+                if (isClosed && points.length > 2) {
+                    const lastPoint = points[points.length - 1];
+                    const firstPoint = points[0];
+                    
+                    const R = 6371; // Earth's radius in kilometers
+                    const dLat = (firstPoint.lat - lastPoint.lat) * Math.PI / 180;
+                    const dLng = (firstPoint.lng - lastPoint.lng) * Math.PI / 180;
+                    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                            Math.cos(lastPoint.lat * Math.PI / 180) * Math.cos(firstPoint.lat * Math.PI / 180) *
+                            Math.sin(dLng/2) * Math.sin(dLng/2);
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                    const closingDistance = R * c;
+                    
+                    totalDistance += closingDistance;
+                }
+                
+                return totalDistance;
+            }
+
+            showShape(shapeId) {
+                const shape = this.shapes.find(s => s.id === shapeId);
+                if (!shape) return;
+
+                // If shape doesn't have visual elements, create them
+                if (!shape.markers || !shape.lines) {
+                    this.createShapeVisuals(shape);
+                }
+
+                // Show markers
+                if (shape.markers) {
+                    shape.markers.forEach(marker => {
+                        if (!this.map.hasLayer(marker)) {
+                            this.map.addLayer(marker);
+                        }
+                    });
+                }
+
+                // Show lines
+                if (shape.lines) {
+                    shape.lines.forEach(line => {
+                        if (!this.map.hasLayer(line)) {
+                            this.map.addLayer(line);
+                        }
+                    });
+                }
+
+                // Show closing line if exists
+                if (shape.closingLine && !this.map.hasLayer(shape.closingLine)) {
+                    this.map.addLayer(shape.closingLine);
+                }
+
+                shape.visible = true;
+            }
+
+            hideShape(shapeId) {
+                const shape = this.shapes.find(s => s.id === shapeId);
+                if (!shape) return;
+
+                // Hide markers
+                if (shape.markers) {
+                    shape.markers.forEach(marker => {
+                        if (this.map.hasLayer(marker)) {
+                            this.map.removeLayer(marker);
+                        }
+                    });
+                }
+
+                // Hide lines
+                if (shape.lines) {
+                    shape.lines.forEach(line => {
+                        if (this.map.hasLayer(line)) {
+                            this.map.removeLayer(line);
+                        }
+                    });
+                }
+
+                // Hide closing line if exists
+                if (shape.closingLine && this.map.hasLayer(shape.closingLine)) {
+                    this.map.removeLayer(shape.closingLine);
+                }
+
+                shape.visible = false;
+            }
+
+            toggleShapeVisibility(shapeId) {
+                console.log('toggleShapeVisibility called with shapeId:', shapeId);
+                const shape = this.shapes.find(s => s.id === shapeId);
+                if (!shape) {
+                    console.error('Shape not found:', shapeId);
+                    return;
+                }
+
+                console.log('Current shape visibility:', shape.visible);
+                
+                if (shape.visible !== false) {
+                    console.log('Hiding shape...');
+                    this.hideShape(shapeId);
+                    this.updateStatus(`🙈 Hidden ${shape.name}`);
+                } else {
+                    console.log('Showing shape...');
+                    this.showShape(shapeId);
+                    this.updateStatus(`👁️ Showing ${shape.name}`);
+                }
+
+                console.log('New shape visibility:', shape.visible);
+                
+                // Refresh the shapes list to update button text
+                this.updateShapesList();
+            }
+
+            createShapeVisuals(shape) {
+                // Create markers for each point
+                shape.markers = [];
+                shape.lines = [];
+
+                shape.points.forEach((point, index) => {
+                    const pointNumber = index + 1;
+                    
+                    const markerHtml = `
+                        <div class="marker-wrapper">
+                            <div style="position: relative; color: ${shape.color}; font-weight: bold;">
+                                ${pointNumber}
+                            </div>
+                        </div>
+                    `;
+                    
+                    const marker = L.marker([point.lat, point.lng], {
+                        icon: L.divIcon({
+                            className: 'draw-marker',
+                            html: markerHtml,
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
+                        })
+                    });
+
+                    marker.bindPopup(`
+                        <strong>${shape.name} - Point ${pointNumber}</strong><br>
+                        Lat: ${point.lat.toFixed(6)}<br>
+                        Lng: ${point.lng.toFixed(6)}<br>
+                        Shape Score: ${shape.score}
+                    `);
+
+                    shape.markers.push(marker);
+
+                    // Create line to previous point
+                    if (index > 0) {
+                        const prevPoint = shape.points[index - 1];
+                        const line = L.polyline([
+                            [prevPoint.lat, prevPoint.lng],
+                            [point.lat, point.lng]
+                        ], {color: shape.color, weight: 3});
+                        
+                        shape.lines.push(line);
+                    }
+                });
+
+                // Create closing line if shape is closed
+                if (shape.isClosed && shape.points.length > 2) {
+                    const firstPoint = shape.points[0];
+                    const lastPoint = shape.points[shape.points.length - 1];
+                    shape.closingLine = L.polyline([
+                        [lastPoint.lat, lastPoint.lng],
+                        [firstPoint.lat, firstPoint.lng]
+                    ], {color: shape.color, weight: 3, dashArray: '5, 5'});
+                }
+            }
+
+            updateShapeInfo() {
+                const currentInfo = this.currentShapeId ? 
+                    `Shape: ${this.currentShapeId} (${this.routePoints.length} pts)` : 
+                    'Shape: None';
+                document.getElementById('currentShapeInfo').textContent = currentInfo;
+                
+                // Update distance information
+                const distance = this.calculateShapeDistance(this.routePoints, this.isShapeClosed);
+                const distanceText = distance > 0 ? 
+                    `Distance: ${distance.toFixed(2)} km` : 
+                    'Distance: 0 km';
+                document.getElementById('shapeDistance').textContent = distanceText;
+            }
+
+            updateShapeCounter() {
+                document.getElementById('totalShapes').textContent = `Total Shapes: ${this.shapes.length}`;
+            }
+
+            updateStatus(message) {
+                document.getElementById('status').textContent = message;
+                console.log('Status:', message);
+            }
+        }
+
+        // Initialize the application
+        let mapQuest;
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                mapQuest = new MapQuestComplete();
+                console.log('MapQuest Complete started successfully');
+            } catch (error) {
+                console.error('Error starting MapQuest:', error);
+                document.getElementById('status').textContent = 'ERROR: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
